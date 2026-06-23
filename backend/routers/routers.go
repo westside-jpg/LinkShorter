@@ -16,10 +16,6 @@ type CreateLinkRequest struct {
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", nil)
-	})
-
 	r.POST("/create-link", func(c *gin.Context) {
 		var req CreateLinkRequest
 		err := c.ShouldBindJSON(&req)

@@ -29,42 +29,56 @@ func ToUpperAndLower(text string) string {
 	return string(runes)
 }
 
-// GenerateLink принимает длиннную ссылку, записывает в БД и возвращает короткую
+// GenerateLink принимает длиннную ссылку, записывает (сверяет с) в БД и возвращает короткую
 func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
 	var link = "localhost:8080/"
 
-	var id int
+	var existedLink string
 
-	for {
-		var randomEnd = ToUpperAndLower((uuid.New()).String())[0:6]
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT short_url FROM links
+			WHERE original_url = $1`,
+		longLink,
+	).Scan(&existedLink)
 
-		err := db.QueryRow(
-			context.Background(),
-			`SELECT id FROM links
-			WHERE short_url = $1`,
-			link+randomEnd,
-		).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		var id int
+		for {
+			var randomEnd = ToUpperAndLower((uuid.New()).String())[0:6]
 
-		if errors.Is(err, pgx.ErrNoRows) {
-			link = link + randomEnd
-			_, err = db.Exec(
+			err := db.QueryRow(
 				context.Background(),
-				`INSERT INTO links
-				(original_url, short_url) VALUES ($1, $2)`,
-				longLink, link,
-			)
+				`SELECT id FROM links
+			WHERE short_url = $1`,
+				link+randomEnd,
+			).Scan(&id)
 
-			if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				link = link + randomEnd
+				_, err = db.Exec(
+					context.Background(),
+					`INSERT INTO links
+				(original_url, short_url) VALUES ($1, $2)`,
+					longLink, link,
+				)
+
+				if err != nil {
+					return "", err
+				}
+
+				return link, nil
+
+			} else if err != nil {
 				return "", err
 			}
 
-			return link, nil
-
-		} else if err != nil {
-			return "", err
 		}
-
+	} else if err != nil {
+		return "", err
 	}
+
+	return existedLink, nil
 }
 
 /*

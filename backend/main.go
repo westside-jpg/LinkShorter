@@ -6,6 +6,7 @@ import (
 	"LinkShorter/routers"
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,8 +24,14 @@ func main() {
 	defer db.Close()
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type"},
+	}))
+
 	routers.SetupRoutes(r, db)
-	r.LoadHTMLGlob("../frontend/templates/*")
 
 	err = r.Run()
 	if err != nil {
