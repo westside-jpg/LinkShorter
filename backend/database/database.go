@@ -36,7 +36,18 @@ func CreateTables(db *pgxpool.Pool) error {
 			id SERIAL PRIMARY KEY,
 			original_url TEXT NOT NULL,
 			short_url VARCHAR(30) UNIQUE NOT NULL,
+			user_id INTEGER DEFAULT 0,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW()
+		);
+
+		CREATE TABLE IF NOT EXISTS users (
+		    id SERIAL PRIMARY KEY,
+		    username TEXT NOT NULL UNIQUE,
+		    email TEXT NOT NULL UNIQUE,
+		    password TEXT NOT NULL,
+		    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+		    verification_code TEXT NOT NULL DEFAULT '',
+		    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);
 		`,
 	)

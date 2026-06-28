@@ -29,7 +29,7 @@ func ToUpperAndLower(text string) string {
 	return string(runes)
 }
 
-// GenerateLink принимает длиннную ссылку, записывает (сверяет с) в БД и возвращает короткую
+// GenerateLink принимает длинную ссылку, записывает (сверяет с) в БД и возвращает короткую
 func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
 	var link = "localhost:8080/"
 
@@ -100,4 +100,94 @@ func ReturnOriginalLink(db *pgxpool.Pool, code string) (string, error) {
 	}
 
 	return originalURL, nil
+}
+
+/*
+IsUsernameInDatabase проверяет существование имени пользователя
+в базе данных и возращает булевое значение
+*/
+func IsUsernameInDatabase(db *pgxpool.Pool, username string) (bool, error) {
+	var exist string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT username FROM users WHERE username = $1`,
+		username,
+	).Scan(&exist)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+/*
+IsEmailInDatabase проверяет существование почты
+в базе данных и возращает булевое значение
+*/
+func IsEmailInDatabase(db *pgxpool.Pool, email string) (bool, error) {
+	var exist string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT email FROM users WHERE email = $1`,
+		email,
+	).Scan(&exist)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+/*
+IsLoginValid проверяет существование пользователя
+в базе данных и возращает булевое значение
+*/
+func IsLoginValid(db *pgxpool.Pool, username string, password string) (bool, error) {
+	var exist string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT 1 FROM users WHERE username = $1, password = $2`,
+		username, password,
+	).Scan(&exist)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+
+	// Дописать проверку почта + пароль
+}
+
+/*
+RegisterUser добавляет в базу данных username, email, password, verification_code
+зарегистрированного пользователя и возвращает ошибку, если она есть
+*/
+func RegisterUser(db *pgxpool.Pool, username string, email string, password string) error {
+	var verificationCode string
+
+	verificationCode = uuid.New().String()
+
+	_, err := db.Exec(
+		context.Background(),
+		`INSERT INTO users (username, password, email, verification_code) VALUES ($1, $2, $3, $4)`,
+		username, password, email, verificationCode,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
