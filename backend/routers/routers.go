@@ -1,6 +1,7 @@
 package routers
 
 import (
+	jwt_service "LinkShorter/jwt"
 	"LinkShorter/services"
 	"errors"
 	"net/http"
@@ -74,21 +75,20 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.Redirect(http.StatusFound, originalURL)
 	})
 
-	// НАПИСАТЬ ОТПРАВКУ ПИСЬМА
 	r.POST("/api/registration", func(c *gin.Context) {
 		var req CreateRegistrationRequest
 		err := c.ShouldBindJSON(&req)
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": "Неправильный запрос",
+				"errors": []string{"Неправильный запрос"},
 			})
 			return
 		}
 
 		if len(req.Username) > 30 {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": "Максимальная длина имени пользователя 30 символов",
+				"errors": []string{"Максимальная длина имени пользователя 30 символов"},
 			})
 			return
 		}
@@ -107,7 +107,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		usernameExist, err = services.IsUsernameInDatabase(db, username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": "Ошибка базы данных. Попробуйте позже",
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
 			})
 			return
 		}
@@ -119,7 +119,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		emailExist, err = services.IsEmailInDatabase(db, email)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": "Ошибка базы данных. Попробуйте позже",
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
 			})
 			return
 		}
@@ -139,7 +139,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": "Ошибка сервера. Попробуйте позже",
+				"errors": []string{"Ошибка сервера. Попробуйте позже"},
 			})
 			return
 		}
@@ -148,12 +148,33 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": "Ошибка базы данных. Попробуйте позже",
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
 			})
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{})
+		err = services.SendEmail(db, email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка отправки письма. Попробуйте позже"},
+			})
+			return
+		}
+
+		var userID int
+		userID, err = services.GetUserID(db, username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
+		var token string
+		token, err = jwt_service.GenerateJWT(userID, false)
+
+		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
+		c.JSON(http.StatusOK, gin.H{})
 	})
 
 	r.POST("/api/login", func(c *gin.Context) {
@@ -162,10 +183,52 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Неправильный запрос",
+				"errors": []string{"Неправильный запрос"},
 			})
 			return
 		}
 
+		var loginInput, password string
+		loginInput = strings.TrimSpace(req.LoginInput)
+		password = strings.TrimSpace(req.Password)
+
+		var isExist bool
+		isExist, err = services.IsLoginValid(db, loginInput, password)
+
+		if !isExist && err == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errors": []string{"Неправильный логин или пароль"},
+			})
+			return
+		} else if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
+		var userID int
+		userID, err = services.GetUserID(db, loginInput)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
+		var isVerified bool
+		isVerified, err = services.GetUserVerified(db, loginInput)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
+		var token string
+		token, err = jwt_service.GenerateJWT(userID, isVerified)
+
+		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
+		c.JSON(http.StatusOK, gin.H{})
 	})
 }

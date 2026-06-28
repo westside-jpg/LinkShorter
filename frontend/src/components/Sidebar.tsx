@@ -64,6 +64,18 @@ function Sidebar({ isOpen }: SidebarProps) {
                 }),
             }
         )
+
+        const data = await request.json()
+
+        if (request.ok) {
+            setErrors([])
+            setIsRegistration(false)
+            setIsLogin(false)
+            setIsMenu(true)
+        } else {
+            setErrors(data["errors"])
+            return
+        }
     }
 
     return (
@@ -149,13 +161,15 @@ function Sidebar({ isOpen }: SidebarProps) {
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
-                    {errors && <p className="text-red-500 self-center pt-6">{errors}</p>}
+                    {errors.length > 0 && errors.map((e, i) => (
+                        <p key={i} className="text-red-500 text-sm">{e}</p>
+                    ))}
                     <button className="flex-1 border-2 rounded-xl px-4 mt-5 py-1.5 text-center
               hover:bg-blue-600 hover:border-blue-600 hover:text-white
               active:bg-blue-500 active:border-blue-500 active:text-white
                 hover:shadow-lg hover:shadow-blue-500/50
                 transition-all duration-200 cursor-pointer"
-                    onClick={void handleRegistration()}>
+                onClick={() => { void handleRegistration() }}>
                         Зарегистрироваться
                     </button>
                 </div>
@@ -181,12 +195,15 @@ function Sidebar({ isOpen }: SidebarProps) {
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
-                    {errors && <p className="text-red-500 self-center pt-6">{errors}</p>}
+                    {errors.length > 0 && errors.map((e, i) => (
+                        <p key={i} className="text-red-500 text-sm">{e}</p>
+                    ))}
                     <button className="flex-1 border-2 rounded-xl px-4 mt-5 py-1.5 text-center
                hover:bg-blue-600 hover:border-blue-600 hover:text-white
                active:bg-blue-500 active:border-blue-500 active:text-white
                  hover:shadow-lg hover:shadow-blue-500/50
-                 transition-all duration-200 cursor-pointer">
+                 transition-all duration-200 cursor-pointer"
+                 onClick={() => { void handleLogin() }}>
                         Войти
                     </button>
                 </div>

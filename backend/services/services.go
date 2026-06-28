@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"os"
+	"strconv"
 	"unicode"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
 )
 
 // ToUpperAndLower делает буквы слова то маленькими, то большими
@@ -150,24 +154,104 @@ func IsEmailInDatabase(db *pgxpool.Pool, email string) (bool, error) {
 IsLoginValid проверяет существование пользователя
 в базе данных и возращает булевое значение
 */
-func IsLoginValid(db *pgxpool.Pool, username string, password string) (bool, error) {
-	var exist string
+func IsLoginValid(db *pgxpool.Pool, loginInput string, password string) (bool, error) {
+	var hashedPassword string
 
 	err := db.QueryRow(
 		context.Background(),
-		`SELECT 1 FROM users WHERE username = $1, password = $2`,
-		username, password,
-	).Scan(&exist)
+		`SELECT password FROM users WHERE username = $1 OR email = $1`,
+		loginInput,
+	).Scan(&hashedPassword)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+		return false, nil // Пользователь не найден
 	} else if err != nil {
-		return false, err
+		return false, err // Ошибка БД
 	}
 
-	return true, nil
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return false, nil // Пароль неверный
+	}
 
-	// Дописать проверку почта + пароль
+	return true, nil // Все хорошо
+}
+
+// SendEmail отправляет ссылку для подтверждения почты
+func SendEmail(db *pgxpool.Pool, email string) error {
+	var verificationCode string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT verification_code FROM users WHERE email = $1`,
+		email,
+	).Scan(&verificationCode)
+
+	if err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("SMTP_USER"))
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Подтверждение почты для LinkShorter")
+	m.SetBody("text/html", `
+	<!DOCTYPE html>
+	<html lang="ru">
+	<head>
+		<meta charset="UTF-8">
+	</head>
+	<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
+		<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:40px 0;">
+			<tr>
+				<td align="center">
+					<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+						<tr>
+							<td align="center">
+								<h1 style="margin:0;color:#333;font-size:28px;">
+									Подтверждение почты
+								</h1>
+
+								<p style="margin:24px 0 16px;color:#555;font-size:16px;line-height:1.6;">
+									Спасибо за регистрацию! Для подтверждения адреса электронной почты
+									нажмите на кнопку ниже
+								</p>
+
+                            	<a href="http://localhost:8080/verify/`+verificationCode+`"
+                               		style="display:inline-block;background:#2563eb;color:#ffffff;
+                                    	  text-decoration:none;padding:14px 32px;
+                                    	  border-radius:8px;font-size:16px;font-weight:bold;">
+                                	Подтвердить почту
+                            	</a>
+
+								<p style="margin:24px 0 0;color:#777;font-size:14px;">
+									Ссылка действительна <strong>3 дня</strong>
+								</p>
+
+                            	<hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;">
+
+								<p style="margin:0;color:#999;font-size:13px;line-height:1.5;">
+									Если вы не регистрировались на нашем сайте, просто проигнорируйте это письмо
+								</p>
+                        	</td>
+                    	</tr>
+                	</table>
+            	</td>
+       	 </tr>
+    	</table>
+	</body>
+	</html>
+	`)
+
+	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	d := gomail.NewDialer(
+		os.Getenv("SMTP_HOST"),
+		port,
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+
+	return d.DialAndSend(m)
 }
 
 /*
@@ -190,4 +274,44 @@ func RegisterUser(db *pgxpool.Pool, username string, email string, password stri
 	}
 
 	return nil
+}
+
+/*
+GetUserID возвращает айди пользователя из БД
+по его имени пользователя
+*/
+func GetUserID(db *pgxpool.Pool, loginInput string) (int, error) {
+	var userID int
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT user_id FROM users WHERE username = $1 OR email = $1`,
+		loginInput,
+	).Scan(&userID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
+}
+
+/*
+GetUserVerified возвращает булевое значение из БД
+относительно верификации почты по его имени пользователя
+*/
+func GetUserVerified(db *pgxpool.Pool, loginInput string) (bool, error) {
+	var isVerified bool
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT is_verified FROM users WHERE username = $1 OR email = $1`,
+		loginInput,
+	).Scan(&isVerified)
+
+	if err != nil {
+		return false, err
+	}
+
+	return isVerified, nil
 }
