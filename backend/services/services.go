@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 	"os"
+	"regexp"
 	"strconv"
 	"unicode"
 
@@ -277,15 +278,15 @@ func RegisterUser(db *pgxpool.Pool, username string, email string, password stri
 }
 
 /*
-GetUserID возвращает айди пользователя из БД
-по его имени пользователя
+GetUserID возвращает id пользователя из БД
+по его имени пользователя или почте
 */
 func GetUserID(db *pgxpool.Pool, loginInput string) (int, error) {
 	var userID int
 
 	err := db.QueryRow(
 		context.Background(),
-		`SELECT user_id FROM users WHERE username = $1 OR email = $1`,
+		`SELECT id FROM users WHERE username = $1 OR email = $1`,
 		loginInput,
 	).Scan(&userID)
 
@@ -298,7 +299,7 @@ func GetUserID(db *pgxpool.Pool, loginInput string) (int, error) {
 
 /*
 GetUserVerified возвращает булевое значение из БД
-относительно верификации почты по его имени пользователя
+относительно верификации почты по его имени пользователя или почте
 */
 func GetUserVerified(db *pgxpool.Pool, loginInput string) (bool, error) {
 	var isVerified bool
@@ -314,4 +315,97 @@ func GetUserVerified(db *pgxpool.Pool, loginInput string) (bool, error) {
 	}
 
 	return isVerified, nil
+}
+
+/*
+GetUserEmail возвращает email пользователя из БД
+по его имени пользователя или почте
+*/
+func GetUserEmail(db *pgxpool.Pool, loginInput string) (string, error) {
+	var email string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT email FROM users WHERE username = $1 OR email = $1`,
+		loginInput,
+	).Scan(&email)
+
+	if err != nil {
+		return "", err
+	}
+
+	return email, nil
+}
+
+/*
+IsValidEmail проверяет корректность введенной
+почты и возвращает булевое значение
+*/
+func IsValidEmail(email string) bool {
+	return regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`).MatchString(email)
+}
+
+/*
+IsPasswordStrong проверяет, что в пароле есть как минимум
+одна заглавная буква, одна маленькая и цифра и возращает булево значение
+*/
+func IsPasswordStrong(password string) bool {
+	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
+	hasDigit := regexp.MustCompile(`[0-9]`).MatchString(password)
+	return hasUpper && hasLower && hasDigit
+}
+
+/*
+IsValidPassword проверяет что пароль состоит только из
+латинских букв, цифр и спецсимволов (без пробелов и кириллицы)
+*/
+func IsValidPassword(password string) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$`).MatchString(password)
+}
+
+/*
+IsValidUsername проверяет что имя пользователя состоит только
+из латинских букв, цифр и подчёркивания
+*/
+func IsValidUsername(username string) bool {
+	return regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString(username)
+}
+
+/*
+ValidateRegistration проверяет username, email и password на соответствие
+требованиям (длина, допустимые символы, сложность пароля, корректность почты)
+и возвращает список текстовых ошибок. Пустой слайс означает что данные валидны
+*/
+func ValidateRegistration(username string, email string, password string) []string {
+	var errs []string
+
+	if len(username) > 30 {
+		errs = append(errs, "Максимальная длина имени 30 символов")
+	}
+	if len(username) < 3 {
+		errs = append(errs, "Минимальная длина имени 3 символа")
+	}
+	if !IsValidUsername(username) {
+		errs = append(errs, "Имя пользователя может содержать только латинские буквы, цифры и подчёркивание")
+	}
+
+	if !IsValidEmail(email) {
+		errs = append(errs, "Почта введена некорректно")
+	}
+
+	if len(password) < 8 {
+		errs = append(errs, "Минимальная длина пароля 8 символов")
+	}
+	if len(password) > 72 {
+		errs = append(errs, "Максимальная длина пароля 72 символа")
+	}
+	if !IsValidPassword(password) {
+		errs = append(errs, "Пароль содержит недопустимые символы")
+	}
+	if !IsPasswordStrong(password) {
+		errs = append(errs, "Пароль должен содержать заглавную букву, строчную букву и цифру")
+	}
+
+	return errs
 }

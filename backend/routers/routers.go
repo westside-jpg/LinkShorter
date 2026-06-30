@@ -4,10 +4,13 @@ import (
 	jwt_service "LinkShorter/jwt"
 	"LinkShorter/services"
 	"errors"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -86,23 +89,22 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		if len(req.Username) > 30 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{"Максимальная длина имени пользователя 30 символов"},
-			})
-			return
-		}
-
 		// Приведение данных в адекватный вид
 		var username, email, password string
 		username = strings.TrimSpace(req.Username)
 		email = strings.TrimSpace(req.Email)
 		password = strings.TrimSpace(req.Password)
 
+		errs := services.ValidateRegistration(username, email, password)
+		if len(errs) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errors": errs,
+			})
+			return
+		}
+
 		var usernameExist bool
 		var emailExist bool
-
-		var errs []string
 
 		usernameExist, err = services.IsUsernameInDatabase(db, username)
 		if err != nil {
@@ -145,18 +147,9 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		err = services.RegisterUser(db, username, email, string(hashedPassword))
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
-			})
-			return
-		}
-
-		err = services.SendEmail(db, email)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": []string{"Ошибка отправки письма. Попробуйте позже"},
 			})
 			return
 		}
@@ -171,10 +164,23 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		var token string
-		token, err = jwt_service.GenerateJWT(userID, false)
+		token, err = jwt_service.GenerateJWT(userID, email, false)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка сервера. Попробуйте позже"},
+			})
+			return
+		}
 
 		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
+
 		c.JSON(http.StatusOK, gin.H{})
+
+		go func() {
+			if err := services.SendEmail(db, email); err != nil {
+				log.Println("не удалось отправить письмо :( :", err)
+			}
+		}()
 	})
 
 	r.POST("/api/login", func(c *gin.Context) {
@@ -225,10 +231,50 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		var email string
+		email, err = services.GetUserEmail(db, loginInput)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
 		var token string
-		token, err = jwt_service.GenerateJWT(userID, isVerified)
+		token, err = jwt_service.GenerateJWT(userID, email, isVerified)
 
 		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
-		c.JSON(http.StatusOK, gin.H{})
+		c.JSON(http.StatusOK, gin.H{
+			"is_verified": isVerified,
+		})
+	})
+
+	// Получение JWT-токена из Cookies для React'а
+	r.GET("/api/me", func(c *gin.Context) {
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errors": []string{"Сессия неактивна. Войдите в аккаунт"},
+			})
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
+
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errors": []string{"Сессия истекла. Войдите в аккаунт"},
+			})
+			return
+		}
+
+		claims := token.Claims.(jwt.MapClaims)
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":     claims["user_id"],
+			"email":       claims["email"],
+			"is_verified": claims["is_verified"],
+		})
 	})
 }
