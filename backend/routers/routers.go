@@ -31,6 +31,10 @@ type CreateLoginRequest struct {
 	Password   string `json:"password"`
 }
 
+type ResendEmail struct {
+	Email string `json:"email"`
+}
+
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	r.POST("/create-link", func(c *gin.Context) {
@@ -164,7 +168,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		var token string
-		token, err = jwt_service.GenerateJWT(userID, email, false)
+		token, err = jwt_service.GenerateJWT(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"errors": []string{"Ошибка сервера. Попробуйте позже"},
@@ -222,31 +226,11 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		var isVerified bool
-		isVerified, err = services.GetUserVerified(db, loginInput)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
-			})
-			return
-		}
-
-		var email string
-		email, err = services.GetUserEmail(db, loginInput)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
-			})
-			return
-		}
-
 		var token string
-		token, err = jwt_service.GenerateJWT(userID, email, isVerified)
+		token, err = jwt_service.GenerateJWT(userID)
 
 		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
-		c.JSON(http.StatusOK, gin.H{
-			"is_verified": isVerified,
-		})
+		c.JSON(http.StatusOK, gin.H{})
 	})
 
 	// Получение JWT-токена из Cookies для React'а
@@ -271,10 +255,22 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
+		userID := int(claims["user_id"].(float64))
+
+		username, email, isVerified, createdAt, err := services.DataAboutUserFromJWT(db, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка базы данных. Попробуйте позже"},
+			})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"user_id":     claims["user_id"],
-			"email":       claims["email"],
-			"is_verified": claims["is_verified"],
+			"user_id":     userID,
+			"username":    username,
+			"email":       email,
+			"is_verified": isVerified,
+			"created_at":  createdAt,
 		})
 	})
 
@@ -289,7 +285,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		userID, email, err := services.GetUserIDAndEmailByCode(db, code)
+		userID, err := services.GetUserIDByCode(db, code)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. Попробуйте позже",
@@ -298,7 +294,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		var token string
-		token, err = jwt_service.GenerateJWT(userID, email, true)
+		token, err = jwt_service.GenerateJWT(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка выдачи токена",
@@ -307,5 +303,28 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
 		c.Redirect(http.StatusFound, "http://localhost:5173/?verified=true")
+	})
+
+	r.POST("/api/resend-email", func(c *gin.Context) {
+		var req ResendEmail
+		err := c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errors": "Неправильный запрос",
+			})
+			return
+		}
+
+		err = services.SendEmail(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": "Ошибка отправки письма. \n Попробуйте позже",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message_success": "Письмо успешно отправлено",
+		})
 	})
 }

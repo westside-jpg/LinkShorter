@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"time"
 	"unicode"
 
 	"github.com/google/uuid"
@@ -428,21 +429,42 @@ func VerifyEmail(db *pgxpool.Pool, code string) error {
 }
 
 /*
-GetUserIDAndEmailByCode возвращает id и email пользователя
+GetUserIDByCode возвращает id пользователя
 по его коду верификации почты
 */
-func GetUserIDAndEmailByCode(db *pgxpool.Pool, code string) (int, string, error) {
+func GetUserIDByCode(db *pgxpool.Pool, code string) (int, error) {
 	var userID int
-	var email string
 
 	err := db.QueryRow(
 		context.Background(),
-		`SELECT id, email FROM users WHERE verification_code = $1`,
-		code).Scan(&userID, &email)
+		`SELECT id FROM users WHERE verification_code = $1`,
+		code).Scan(&userID)
 
 	if err != nil {
-		return 0, "", err
+		return 0, err
 	}
 
-	return userID, email, nil
+	return userID, nil
+}
+
+/*
+DataAboutUserFromJWT возвращает значения для ручки /api/me
+с информацией по пользователю
+*/
+func DataAboutUserFromJWT(db *pgxpool.Pool, userId int) (string, string, bool, time.Time, error) {
+	var username string
+	var email string
+	var isVerified bool
+	var createdAt time.Time
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT username, email, is_verified, created_at FROM users WHERE id = $1`,
+		userId).Scan(&username, &email, &isVerified, &createdAt)
+
+	if err != nil {
+		return "", "", false, time.Time{}, err
+	}
+
+	return username, email, isVerified, createdAt, nil
 }

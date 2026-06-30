@@ -21,6 +21,17 @@ function Sidebar({ isOpen }: SidebarProps) {
     const [loginInput, setLoginInput] = useState("")
     const [password, setPassword] = useState("")
     const [errors, setErrors] = useState<string[]>([])
+    const [message, setMessage] = useState("")
+    const [messageType, setMessageType] = useState("")
+
+    const formatDate = (date: Date) => {
+        const day = String(date.getDate()).padStart(2, "0")
+        const month = String(date.getMonth() + 1).padStart(2, "0")
+        const year = date.getFullYear()
+        const hours = String(date.getHours()).padStart(2, "0")
+        const minutes = String(date.getMinutes()).padStart(2, "0")
+        return `${day}.${month}.${year} в ${hours}:${minutes}`
+    }
 
     useEffect(() => {
         if (user) {
@@ -28,7 +39,8 @@ function Sidebar({ isOpen }: SidebarProps) {
             setIsLogin(false)
             setIsMenu(true)
             if (!user.is_verified) {
-                setVerify("Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален (дата и время удаления аккаунта в UTC)")
+                const deleteDate = new Date(new Date(user.created_at).getTime() + 3 * 24 * 60 * 60 * 1000)
+                setVerify(`Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален \n ${formatDate(deleteDate)}`)
             }
         }
     }, [user])
@@ -136,6 +148,39 @@ function Sidebar({ isOpen }: SidebarProps) {
         }
     }
 
+    const resendEmail = async () => {
+        if (!user?.email) {
+            setErrors(["Ошибка токена. Попробуйте войти в аккаунт снова"])
+            return
+        }
+        try {
+            setIsLoading(true)
+            const request = await fetch("http://localhost:8080/api/resend-email", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    email: user.email
+                })
+            })
+
+            const data = await request.json()
+
+            if (request.ok) {
+                setIsLoading(false)
+                setMessage(data["message_success"])
+                setMessageType("success")
+            } else {
+                setIsLoading(false)
+                setMessage(data["errors"])
+                setMessageType("error")
+            }
+        } catch (err) {
+            setIsLoading(false)
+            setMessage("Не удалось связаться с сервером")
+            setMessageType("error")
+        }
+    }
+
     return (
         <div className={`fixed top-0 right-0 h-full w-90 bg-white shadow-xl shadow-white rounded-tl-4xl rounded-bl-4xl z-50
             transform transition-transform duration-300
@@ -148,7 +193,33 @@ function Sidebar({ isOpen }: SidebarProps) {
                 </p>
             </div>
 
-            {isMenu && verify && <p className="text-orange-400 self-center text-center px-4">{verify}</p>}
+            {isMenu && verify && (<div className="flex justify-center text-center py-4 px-6 whitespace-pre-line">
+                <div className="bg-orange-100 border-2 border-orange-600 text-orange-700 rounded-xl px-6 py-2">
+                    {verify}
+                </div>
+            </div>)}
+
+            {isMenu && message && (<div className="flex-1 justify-center text-center pb-4 px-6 whitespace-pre-line">
+                <div className={`rounded-xl px-6 py-2 whitespace-pre-line
+                ${messageType == "success" ? "bg-green-100 border-2 border-green-600 text-green-700"
+                : "bg-red-100 border-2 border-red-600 text-red-700"}`}>
+                    {message}
+                </div>
+            </div>)}
+
+            {isMenu && verify && (
+                <div className="flex justify-center px-6">
+                    <button className={`flex-1 border-2 rounded-xl text-center px-4 py-1.5
+                    transition-[background-color,border-color,color,box-shadow] duration-200
+                    ${isLoading
+                        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
+                        : "hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
+                    }`}
+                    onClick={() => { void resendEmail() }}>
+                        {isLoading ? "Подождите" : "Отправить письмо еще раз"}
+                    </button>
+                </div>
+            )}
 
             {!isMenu && (
                 <div className="flex flex-row gap-2 pt-8 px-6">

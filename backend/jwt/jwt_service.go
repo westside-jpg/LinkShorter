@@ -12,12 +12,10 @@ GenerateJWT создает JWT-токен с полями:
 - user_id (айди пользователя в БД)
 - is_verified (подтверждена ли почта)
 */
-func GenerateJWT(userID int, email string, isVerified bool) (string, error) {
+func GenerateJWT(userID int) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id":     userID,
-		"email":       email,
-		"is_verified": isVerified,
-		"exp":         time.Now().Add(30 * 24 * time.Hour).Unix(),
+		"user_id": userID,
+		"exp":     time.Now().Add(30 * 24 * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))

@@ -37,7 +37,7 @@ func CreateTables(db *pgxpool.Pool) error {
 			original_url TEXT NOT NULL,
 			short_url VARCHAR(30) UNIQUE NOT NULL,
 			user_id INTEGER DEFAULT 0,
-			created_at TIMESTAMP NOT NULL DEFAULT NOW()
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 
 		CREATE TABLE IF NOT EXISTS users (
@@ -47,7 +47,7 @@ func CreateTables(db *pgxpool.Pool) error {
 		    password TEXT NOT NULL,
 		    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
 		    verification_code TEXT NOT NULL DEFAULT '',
-		    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+		    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 		`,
 	)

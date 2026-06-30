@@ -2,8 +2,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 type User = {
     user_id: number
+    username: string
     email: string
     is_verified: boolean
+    created_at: string
 } | null
 
 type AuthContextType = {
@@ -25,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
             if (res.ok) {
                 const data = await res.json()
-                setUser({ user_id: data.user_id, email: data.email, is_verified: data.is_verified })
+                setUser({ user_id: data.user_id, username: data.username, email: data.email, is_verified: data.is_verified, created_at: data.created_at })
             } else {
                 setUser(null)
             }
