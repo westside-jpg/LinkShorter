@@ -1,15 +1,19 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import { useAuth } from "../context/AuthContext"
 
 type SidebarProps = {
     isOpen: boolean
 }
 
 function Sidebar({ isOpen }: SidebarProps) {
+    const { user, loading, refreshUser } = useAuth()
+
     // Для показа нужных элементов
     const [isRegistration, setIsRegistration] = useState(true)
     const [isLogin, setIsLogin] = useState(false)
     const [isMenu, setIsMenu] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [verify, setVerify] = useState("")
 
     // Для принятия значений и возврата ошибок/подтверждений
     const [username, setUsername] = useState("")
@@ -17,7 +21,17 @@ function Sidebar({ isOpen }: SidebarProps) {
     const [loginInput, setLoginInput] = useState("")
     const [password, setPassword] = useState("")
     const [errors, setErrors] = useState<string[]>([])
-    const [verify, setVerify] = useState("")
+
+    useEffect(() => {
+        if (user) {
+            setIsRegistration(false)
+            setIsLogin(false)
+            setIsMenu(true)
+            if (!user.is_verified) {
+                setVerify("Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален (дата и время удаления аккаунта в UTC)")
+            }
+        }
+    }, [user])
 
     const buttonClass = `flex-1 border-2 rounded-xl text-center px-4 py-1.5
     transition-[background-color,border-color,color,box-shadow] duration-200
@@ -72,10 +86,7 @@ function Sidebar({ isOpen }: SidebarProps) {
             if (request.ok) {
                 setIsLoading(false)
                 setErrors([])
-                setIsRegistration(false)
-                setIsLogin(false)
-                setIsMenu(true)
-                setVerify("Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален (дата и время удаления аккаунта в UTC)")
+                refreshUser()
             } else {
                 setIsLoading(false)
                 setErrors(data["errors"])
@@ -112,14 +123,7 @@ function Sidebar({ isOpen }: SidebarProps) {
             if (request.ok) {
                 setIsLoading(false)
                 setErrors([])
-                setIsRegistration(false)
-                setIsLogin(false)
-                setIsMenu(true)
-                if (data["is_verified"]) {
-                    setVerify("")
-                } else {
-                    setVerify("Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален (дата и время удаления аккаунта в UTC)")
-                }
+                refreshUser()
             } else {
                 setIsLoading(false)
                 setErrors(data["errors"])

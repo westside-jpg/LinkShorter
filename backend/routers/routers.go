@@ -277,4 +277,35 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			"is_verified": claims["is_verified"],
 		})
 	})
+
+	r.GET("/verify/:code", func(c *gin.Context) {
+		code := c.Param("code")
+
+		err := services.VerifyEmail(db, code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. Попробуйте позже",
+			})
+			return
+		}
+
+		userID, email, err := services.GetUserIDAndEmailByCode(db, code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. Попробуйте позже",
+			})
+			return
+		}
+
+		var token string
+		token, err = jwt_service.GenerateJWT(userID, email, true)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка выдачи токена",
+			})
+		}
+
+		c.SetCookie("token", token, 30*24*3600, "/", "localhost", false, true)
+		c.Redirect(http.StatusFound, "http://localhost:5173/?verified=true")
+	})
 }

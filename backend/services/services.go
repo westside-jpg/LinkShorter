@@ -409,3 +409,40 @@ func ValidateRegistration(username string, email string, password string) []stri
 
 	return errs
 }
+
+/*
+VerifyEmail находит почту по коду из письма подтверждает ее
+*/
+func VerifyEmail(db *pgxpool.Pool, code string) error {
+	_, err := db.Exec(
+		context.Background(),
+		`UPDATE users SET is_verified = true WHERE verification_code = $1`,
+		code,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+GetUserIDAndEmailByCode возвращает id и email пользователя
+по его коду верификации почты
+*/
+func GetUserIDAndEmailByCode(db *pgxpool.Pool, code string) (int, string, error) {
+	var userID int
+	var email string
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT id, email FROM users WHERE verification_code = $1`,
+		code).Scan(&userID, &email)
+
+	if err != nil {
+		return 0, "", err
+	}
+
+	return userID, email, nil
+}
