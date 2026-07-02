@@ -193,6 +193,16 @@ func SendEmail(db *pgxpool.Pool, email string) error {
 		return err
 	}
 
+	_, err = db.Exec(
+		context.Background(),
+		`UPDATE users SET last_send = $1
+		WHERE email = $2`,
+		time.Now().UTC(), email)
+
+	if err != nil {
+		return err
+	}
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("SMTP_USER"))
 	m.SetHeader("To", email)
@@ -296,46 +306,6 @@ func GetUserID(db *pgxpool.Pool, loginInput string) (int, error) {
 	}
 
 	return userID, nil
-}
-
-/*
-GetUserVerified возвращает булевое значение из БД
-относительно верификации почты по его имени пользователя или почте
-*/
-func GetUserVerified(db *pgxpool.Pool, loginInput string) (bool, error) {
-	var isVerified bool
-
-	err := db.QueryRow(
-		context.Background(),
-		`SELECT is_verified FROM users WHERE username = $1 OR email = $1`,
-		loginInput,
-	).Scan(&isVerified)
-
-	if err != nil {
-		return false, err
-	}
-
-	return isVerified, nil
-}
-
-/*
-GetUserEmail возвращает email пользователя из БД
-по его имени пользователя или почте
-*/
-func GetUserEmail(db *pgxpool.Pool, loginInput string) (string, error) {
-	var email string
-
-	err := db.QueryRow(
-		context.Background(),
-		`SELECT email FROM users WHERE username = $1 OR email = $1`,
-		loginInput,
-	).Scan(&email)
-
-	if err != nil {
-		return "", err
-	}
-
-	return email, nil
 }
 
 /*
@@ -467,4 +437,26 @@ func DataAboutUserFromJWT(db *pgxpool.Pool, userId int) (string, string, bool, t
 	}
 
 	return username, email, isVerified, createdAt, nil
+}
+
+func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, error) {
+	var lastSendTime time.Time
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT last_send FROM users WHERE email = $1`,
+		email).Scan(&lastSendTime)
+
+	if err != nil {
+		return false, 0, err
+	}
+
+	elapsed := time.Since(lastSendTime)
+	remaining := (time.Minute * 3) - elapsed
+
+	if time.Since(lastSendTime) < (time.Minute * 3) {
+		return false, remaining, nil
+	}
+
+	return true, 0, nil
 }

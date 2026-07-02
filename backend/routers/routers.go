@@ -310,7 +310,23 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		err := c.ShouldBindJSON(&req)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": "Неправильный запрос",
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		couldResend, time, err := services.CouldResendEmail(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. Попробуйте позже",
+			})
+			return
+		}
+
+		if couldResend == false {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error":     "Слишком частые запросы на отправку письма, подождите",
+				"time_wait": int(time.Seconds()),
 			})
 			return
 		}
@@ -318,7 +334,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		err = services.SendEmail(db, req.Email)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": "Ошибка отправки письма. \n Попробуйте позже",
+				"error": "Ошибка отправки письма. \n Попробуйте позже",
 			})
 			return
 		}

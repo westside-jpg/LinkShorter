@@ -47,6 +47,7 @@ func CreateTables(db *pgxpool.Pool) error {
 		    password TEXT NOT NULL,
 		    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
 		    verification_code TEXT NOT NULL DEFAULT '',
+		    last_send TIMESTAMPTZ,
 		    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 		`,

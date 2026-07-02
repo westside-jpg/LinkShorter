@@ -23,6 +23,7 @@ function Sidebar({ isOpen }: SidebarProps) {
     const [errors, setErrors] = useState<string[]>([])
     const [message, setMessage] = useState("")
     const [messageType, setMessageType] = useState("")
+    const [timeWait, setTimeWait] = useState(0)
 
     const formatDate = (date: Date) => {
         const day = String(date.getDate()).padStart(2, "0")
@@ -32,6 +33,26 @@ function Sidebar({ isOpen }: SidebarProps) {
         const minutes = String(date.getMinutes()).padStart(2, "0")
         return `${day}.${month}.${year} в ${hours}:${minutes}`
     }
+
+    const formatTimeWait = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${String(secs).padStart(2, "0")}`
+    }
+
+    useEffect(() => {
+        if (timeWait <= 0) return
+        const interval = setInterval(() => {
+            setTimeWait(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval)
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [timeWait])
 
     useEffect(() => {
         if (user) {
@@ -171,8 +192,11 @@ function Sidebar({ isOpen }: SidebarProps) {
                 setMessageType("success")
             } else {
                 setIsLoading(false)
-                setMessage(data["errors"])
+                setMessage(data["error"])
                 setMessageType("error")
+                if (data["time_wait"]) {
+                    setTimeWait(data["time_wait"])
+                }
             }
         } catch (err) {
             setIsLoading(false)
@@ -204,6 +228,9 @@ function Sidebar({ isOpen }: SidebarProps) {
                 ${messageType == "success" ? "bg-green-100 border-2 border-green-600 text-green-700"
                 : "bg-red-100 border-2 border-red-600 text-red-700"}`}>
                     {message}
+                    {messageType == "error" && timeWait > 0 && (
+                        <p className="text-xl">{formatTimeWait(timeWait)}</p>
+                    )}
                 </div>
             </div>)}
 
@@ -211,8 +238,8 @@ function Sidebar({ isOpen }: SidebarProps) {
                 <div className="flex justify-center px-6">
                     <button className={`flex-1 border-2 rounded-xl text-center px-4 py-1.5
                     transition-[background-color,border-color,color,box-shadow] duration-200
-                    ${isLoading
-                        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
+                    ${(isLoading || timeWait)
+                        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed pointer-events-none"
                         : "hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
                     }`}
                     onClick={() => { void resendEmail() }}>
