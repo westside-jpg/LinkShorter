@@ -40,6 +40,7 @@ function Sidebar({ isOpen }: SidebarProps) {
         return `${mins}:${String(secs).padStart(2, "0")}`
     }
 
+    // Тиканье таймера
     useEffect(() => {
         if (timeWait <= 0) return
         const interval = setInterval(() => {
@@ -52,6 +53,13 @@ function Sidebar({ isOpen }: SidebarProps) {
             })
         }, 1000)
         return () => clearInterval(interval)
+    }, [timeWait])
+
+    useEffect(() => {
+        if (timeWait === 0 && messageType === "error") {
+            setMessage("")
+            setMessageType("")
+        }
     }, [timeWait])
 
     useEffect(() => {
