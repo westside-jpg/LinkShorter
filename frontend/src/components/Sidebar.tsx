@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import { useAuth } from "../context/AuthContext"
-import {Link} from "react-router-dom";
+import {Link, useLocation} from "react-router-dom";
 
 type SidebarProps = {
     isOpen: boolean
@@ -8,6 +8,18 @@ type SidebarProps = {
 
 function Sidebar({ isOpen }: SidebarProps) {
     const { user, refreshUser } = useAuth()
+
+    const location = useLocation()
+
+    const menuItemClass = (path: string) => `border-2 rounded-xl px-4 py-1.5 text-left
+    hover:bg-blue-600 hover:border-blue-600 hover:text-white
+    active:bg-blue-500 active:border-blue-500 active:text-white
+    hover:shadow-lg hover:shadow-blue-500/50
+    transition-all duration-200 cursor-pointer
+    ${location.pathname === path
+        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default"
+        : "bg-white border-black text-black"
+    }`
 
     // Для показа нужных элементов
     const [isRegistration, setIsRegistration] = useState(true)
@@ -34,7 +46,7 @@ function Sidebar({ isOpen }: SidebarProps) {
         const minutes = String(date.getMinutes()).padStart(2, "0")
         return `${day}.${month}.${year} в ${hours}:${minutes}`
     }
-    
+
     const getDeleteAt = (createdAt: string) => {
         const date = new Date(new Date(createdAt).getTime() + 3 * 24 * 60 * 60 * 1000)
         date.setMinutes(0, 0, 0)
@@ -374,19 +386,10 @@ function Sidebar({ isOpen }: SidebarProps) {
 
             {isMenu && (
                 <div className="flex flex-col gap-2 pt-5 px-6">
-
-                    <Link to="/" className="border-2 rounded-xl px-4 py-1.5 text-left
-               hover:bg-blue-600 hover:border-blue-600 hover:text-white
-               active:bg-blue-500 active:border-blue-500 active:text-white
-                 hover:shadow-lg hover:shadow-blue-500/50
-                 transition-all duration-200 cursor-pointer">
+                    <Link to="/" className={menuItemClass("/")}>
                         Главная
                     </Link>
-                    <Link to="/my-links" className="border-2 rounded-xl px-4 py-1.5 text-left
-                hover:bg-blue-600 hover:border-blue-600 hover:text-white
-                active:bg-blue-500 active:border-blue-500 active:text-white
-                  hover:shadow-lg hover:shadow-blue-500/50
-                  transition-all duration-200 cursor-pointer">
+                    <Link to="/my-links" className={menuItemClass("/my-links")}>
                         Мои ссылки
                     </Link>
                 </div>
