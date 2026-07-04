@@ -10,6 +10,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,17 +37,65 @@ func ToUpperAndLower(text string) string {
 	return string(runes)
 }
 
-// GenerateLink принимает длинную ссылку, записывает (сверяет с) в БД и возвращает короткую
-func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
+/*
+GenerateLink принимает длинную ссылку, записывает (сверяет с) в БД и возвращает короткую
+для случаев когда пользователь зарегистрирован или не зарегистрирован
+*/
+func GenerateLink(db *pgxpool.Pool, longLink string, userID int) (string, error) {
 	var link = "localhost:8080/"
-
 	var existedLink string
+
+	if userID == 0 {
+		err := db.QueryRow(
+			context.Background(),
+			`SELECT short_url FROM links
+				WHERE original_url = $1 AND user_id = 0`,
+			longLink,
+		).Scan(&existedLink)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			var id int
+			for {
+				var randomEnd = ToUpperAndLower((uuid.New()).String())[0:6]
+
+				err := db.QueryRow(
+					context.Background(),
+					`SELECT id FROM links
+				     WHERE short_url = $1`,
+					link+randomEnd,
+				).Scan(&id)
+
+				if errors.Is(err, pgx.ErrNoRows) {
+					link = link + randomEnd
+					_, err = db.Exec(
+						context.Background(),
+						`INSERT INTO links
+						 (original_url, short_url) VALUES ($1, $2)`,
+						longLink, link,
+					)
+
+					if err != nil {
+						return "", err
+					}
+
+					return link, nil
+
+				} else if err != nil {
+					return "", err
+				}
+			}
+		} else if err != nil {
+			return "", err
+		}
+
+		return existedLink, nil
+	}
 
 	err := db.QueryRow(
 		context.Background(),
 		`SELECT short_url FROM links
-			WHERE original_url = $1`,
-		longLink,
+				WHERE original_url = $1 AND user_id = $2`,
+		longLink, userID,
 	).Scan(&existedLink)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -56,7 +106,7 @@ func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
 			err := db.QueryRow(
 				context.Background(),
 				`SELECT id FROM links
-			WHERE short_url = $1`,
+				     WHERE short_url = $1`,
 				link+randomEnd,
 			).Scan(&id)
 
@@ -65,8 +115,8 @@ func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
 				_, err = db.Exec(
 					context.Background(),
 					`INSERT INTO links
-				(original_url, short_url) VALUES ($1, $2)`,
-					longLink, link,
+						 (original_url, short_url, user_id) VALUES ($1, $2, $3)`,
+					longLink, link, userID,
 				)
 
 				if err != nil {
@@ -78,7 +128,6 @@ func GenerateLink(db *pgxpool.Pool, longLink string) (string, error) {
 			} else if err != nil {
 				return "", err
 			}
-
 		}
 	} else if err != nil {
 		return "", err
@@ -459,4 +508,153 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 	}
 
 	return true, 0, nil
+}
+
+type Link struct {
+	ShortURL    string `json:"short"`
+	OriginalURL string `json:"original"`
+}
+
+func UserLinks(db *pgxpool.Pool, userId int) ([]Link, error) {
+	rows, err := db.Query(
+		context.Background(),
+		`SELECT short_url, original_url FROM links WHERE user_id = $1`,
+		userId,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var links []Link
+	for rows.Next() {
+		var link Link
+		if err := rows.Scan(&link.ShortURL, &link.OriginalURL); err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	return links, rows.Err()
+}
+
+func GetUserIdFromJWT(c *gin.Context) (int, error) {
+	tokenString, err := c.Cookie("token")
+	if err != nil {
+		return 0, err
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return 0, err
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	userID := int(claims["user_id"].(float64))
+
+	return userID, nil
+}
+
+func ScheduleDeletingNotVerifiedUsers(db *pgxpool.Pool) ([]string, error) {
+	rows, err := db.Query(context.Background(),
+		`SELECT email FROM users
+         WHERE is_verified = FALSE
+         AND created_at < NOW() - INTERVAL '3 days'`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []string
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			return nil, err
+		}
+		emails = append(emails, email)
+	}
+
+	if len(emails) == 0 {
+		return nil, nil
+	}
+
+	_, err = db.Exec(context.Background(),
+		`DELETE FROM users
+         WHERE is_verified = FALSE
+         AND created_at < NOW() - INTERVAL '3 days'`)
+	if err != nil {
+		return nil, err
+	}
+
+	return emails, nil
+}
+
+func SendAccountDeletingEmail(email string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("SMTP_USER"))
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Аккаунт LinkShorter был удалён")
+
+	m.SetBody("text/html", `
+	<!DOCTYPE html>
+	<html lang="ru">
+	<head>
+		<meta charset="UTF-8">
+	</head>
+	<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
+		<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:40px 0;">
+			<tr>
+				<td align="center">
+					<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+						<tr>
+							<td align="center">
+	
+								<h1 style="margin:0;color:#333;font-size:28px;">
+									Аккаунт удалён
+								</h1>
+	
+								<p style="margin:24px 0 16px;color:#555;font-size:16px;line-height:1.6;">
+									К сожалению, Вы не подтвердили адрес электронной почты
+									в течение <strong>3 дней</strong>, поэтому Ваш аккаунт был автоматически удалён...
+								</p>
+
+								<div style="display:inline-block;background:#f3f4f6;padding:16px 24px;border-radius:8px;color:#444;font-size:15px;line-height:1.6;">
+									Нам очень жаль, что так получилось
+								</div>
+	
+								<p style="margin:24px 0 0;color:#555;font-size:16px;line-height:1.6;">
+									Если Вы всё ещё хотите пользоваться <strong>LinkShorter</strong>,
+									просто зарегистрируйтесь снова и подтвердите адрес электронной почты
+								</p>
+	
+								<hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;">
+	
+								<p style="margin:0;color:#999;font-size:13px;line-height:1.5;">
+									Спасибо, что проявили интерес к LinkShorter. Будем рады видеть Вас снова!
+								</p>
+	
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+	</html>
+	`)
+
+	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	d := gomail.NewDialer(
+		os.Getenv("SMTP_HOST"),
+		port,
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+
+	return d.DialAndSend(m)
 }

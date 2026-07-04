@@ -1,6 +1,0 @@
-POST http://localhost:8080/create-link
-Content-Type: application/json
-
-{
-  "url": "https://google.com"
-}

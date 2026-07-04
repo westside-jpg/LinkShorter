@@ -35,6 +35,11 @@ type ResendEmail struct {
 	Email string `json:"email"`
 }
 
+type Link struct {
+	ShortURL    string `json:"short"`
+	OriginalURL string `json:"original"`
+}
+
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	r.POST("/create-link", func(c *gin.Context) {
@@ -48,15 +53,43 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		shortLink, err := services.GenerateLink(db, req.URL)
+		// Создание ссылки для незарегистрированного пользователя
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			shortLink, err := services.GenerateLink(db, req.URL, 0)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Ошибка базы данных. Не удалось создать ссылку",
+				})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"short-link": shortLink,
+			})
+			return
+		}
 
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
+
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Сессия истекла. Войдите в аккаунт",
+			})
+			return
+		}
+
+		claims := token.Claims.(jwt.MapClaims)
+		userID := int(claims["user_id"].(float64))
+
+		shortLink, err := services.GenerateLink(db, req.URL, userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. Не удалось создать ссылку",
 			})
 			return
 		}
-
 		c.JSON(http.StatusOK, gin.H{
 			"short-link": shortLink,
 		})
@@ -80,6 +113,31 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		c.Redirect(http.StatusFound, originalURL)
+	})
+
+	r.GET("/my-links", func(c *gin.Context) {
+		userID, err := services.GetUserIdFromJWT(c)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Ошибка токена. Попробуйте перезайти в аккаунт",
+			})
+			return
+		}
+
+		links, err := services.UserLinks(db, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Ошибка базы данных"})
+			return
+		}
+
+		if len(links) == 0 {
+			c.JSON(http.StatusOK, gin.H{"results": []Link{}})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"results": links})
+
 	})
 
 	r.POST("/api/registration", func(c *gin.Context) {
@@ -235,27 +293,13 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	// Получение JWT-токена из Cookies для React'а
 	r.GET("/api/me", func(c *gin.Context) {
-		tokenString, err := c.Cookie("token")
+		userID, err := services.GetUserIdFromJWT(c)
+
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"errors": []string{"Сессия неактивна. Войдите в аккаунт"},
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка токена. Попробуйте перезайти в аккаунт"},
 			})
-			return
 		}
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"errors": []string{"Сессия истекла. Войдите в аккаунт"},
-			})
-			return
-		}
-
-		claims := token.Claims.(jwt.MapClaims)
-		userID := int(claims["user_id"].(float64))
 
 		username, email, isVerified, createdAt, err := services.DataAboutUserFromJWT(db, userID)
 		if err != nil {

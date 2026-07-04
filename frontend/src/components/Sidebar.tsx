@@ -1,12 +1,13 @@
 import {useEffect, useState} from "react";
 import { useAuth } from "../context/AuthContext"
+import {Link} from "react-router-dom";
 
 type SidebarProps = {
     isOpen: boolean
 }
 
 function Sidebar({ isOpen }: SidebarProps) {
-    const { user, loading, refreshUser } = useAuth()
+    const { user, refreshUser } = useAuth()
 
     // Для показа нужных элементов
     const [isRegistration, setIsRegistration] = useState(true)
@@ -32,6 +33,13 @@ function Sidebar({ isOpen }: SidebarProps) {
         const hours = String(date.getHours()).padStart(2, "0")
         const minutes = String(date.getMinutes()).padStart(2, "0")
         return `${day}.${month}.${year} в ${hours}:${minutes}`
+    }
+    
+    const getDeleteAt = (createdAt: string) => {
+        const date = new Date(new Date(createdAt).getTime() + 3 * 24 * 60 * 60 * 1000)
+        date.setMinutes(0, 0, 0)
+        date.setHours(date.getHours() + 1)
+        return date
     }
 
     const formatTimeWait = (seconds: number) => {
@@ -68,7 +76,7 @@ function Sidebar({ isOpen }: SidebarProps) {
             setIsLogin(false)
             setIsMenu(true)
             if (!user.is_verified) {
-                const deleteDate = new Date(new Date(user.created_at).getTime() + 3 * 24 * 60 * 60 * 1000)
+                const deleteDate = getDeleteAt(user.created_at)
                 setVerify(`Вам необходимо подтвердить почту по ссылке из почтового ящика, иначе Ваш аккаунт будет удален \n ${formatDate(deleteDate)}`)
             }
         }
@@ -367,20 +375,20 @@ function Sidebar({ isOpen }: SidebarProps) {
             {isMenu && (
                 <div className="flex flex-col gap-2 pt-5 px-6">
 
-                    <button className="border-2 rounded-xl px-4 py-1.5 text-left
+                    <Link to="/" className="border-2 rounded-xl px-4 py-1.5 text-left
                hover:bg-blue-600 hover:border-blue-600 hover:text-white
                active:bg-blue-500 active:border-blue-500 active:text-white
                  hover:shadow-lg hover:shadow-blue-500/50
                  transition-all duration-200 cursor-pointer">
                         Главная
-                    </button>
-                    <button className="border-2 rounded-xl px-4 py-1.5 text-left
+                    </Link>
+                    <Link to="/my-links" className="border-2 rounded-xl px-4 py-1.5 text-left
                 hover:bg-blue-600 hover:border-blue-600 hover:text-white
                 active:bg-blue-500 active:border-blue-500 active:text-white
                   hover:shadow-lg hover:shadow-blue-500/50
                   transition-all duration-200 cursor-pointer">
                         Мои ссылки
-                    </button>
+                    </Link>
                 </div>
             )}
 

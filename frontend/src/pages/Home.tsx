@@ -44,21 +44,27 @@ function Home() {
         setNoValue("")
         setInputURL(url)
 
-        const request = await fetch("http://localhost:8080/create-link", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: url })
+        try {
+            const request = await fetch("http://localhost:8080/create-link", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: url }),
+                    credentials: "include"
+                }
+            )
+
+            const data = await request.json()
+
+            if (request.ok) {
+                setResults(prev => [{ type: "success", short: data["short-link"], original: url }, ...prev])
+                setInputURL("")
+            } else {
+                setResults(prev => [{ type: "error", message: data["error"] }, ...prev])
             }
-        )
-
-        const data = await request.json()
-
-        if (request.ok) {
-            setResults(prev => [{ type: "success", short: data["short-link"], original: url }, ...prev])
-            setInputURL("")
-        } else {
-            setResults(prev => [{ type: "error", message: data["error"] }, ...prev])
+        } catch (err) {
+            setResults(prev => [{ type: "error", message: "Не удалось связаться с сервером" }, ...prev])
         }
+
     }
 
     return (
@@ -106,7 +112,7 @@ function Home() {
                 <div className="flex flex-col gap-3 w-150">
                     {results.map((item, index) => (
                         <div key={index} className={`border-2 rounded-xl px-4 py-3 flex flex-col gap-1
-                            ${item.type === "error" ? "border-red-500" : "border-blue-600"}`}>
+                            ${item.type === "error" ? "border-red-500 bg-red-50" : "border-blue-600 bg-blue-50"}`}>
                             {item.type === "success" ? (
                                 <>
                                     <p className="text-blue-600 font-bold">
