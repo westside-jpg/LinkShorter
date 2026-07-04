@@ -37,6 +37,7 @@ func CreateTables(db *pgxpool.Pool) error {
 			original_url TEXT NOT NULL,
 			short_url VARCHAR(30) UNIQUE NOT NULL,
 			user_id INTEGER DEFAULT 0,
+			views INTEGER DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 

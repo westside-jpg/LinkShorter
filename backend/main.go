@@ -47,6 +47,7 @@ func main() {
 	go func() {
 		now := time.Now()
 		nextHour := now.Truncate(time.Hour).Add(time.Hour)
+		log.Println("Горутина начала работать")
 		time.Sleep(time.Until(nextHour))
 
 		runDeletion()

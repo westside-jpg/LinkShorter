@@ -1,6 +1,7 @@
 package services
 
 import (
+	"LinkShorter/models"
 	"context"
 	"errors"
 	"math/rand"
@@ -510,15 +511,10 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 	return true, 0, nil
 }
 
-type Link struct {
-	ShortURL    string `json:"short"`
-	OriginalURL string `json:"original"`
-}
-
-func UserLinks(db *pgxpool.Pool, userId int) ([]Link, error) {
+func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT short_url, original_url FROM links WHERE user_id = $1`,
+		`SELECT short_url, original_url, views FROM links WHERE user_id = $1`,
 		userId,
 	)
 
@@ -528,10 +524,10 @@ func UserLinks(db *pgxpool.Pool, userId int) ([]Link, error) {
 
 	defer rows.Close()
 
-	var links []Link
+	var links []models.Link
 	for rows.Next() {
-		var link Link
-		if err := rows.Scan(&link.ShortURL, &link.OriginalURL); err != nil {
+		var link models.Link
+		if err := rows.Scan(&link.ShortURL, &link.OriginalURL, &link.Views); err != nil {
 			return nil, err
 		}
 		links = append(links, link)
@@ -657,4 +653,19 @@ func SendAccountDeletingEmail(email string) error {
 	)
 
 	return d.DialAndSend(m)
+}
+
+func IncreaseLinkViews(db *pgxpool.Pool, code string) error {
+	_, err := db.Exec(
+		context.Background(),
+		`UPDATE links
+		SET views = views + 1
+		WHERE short_url LIKE '%' || $1 || '%'`,
+		code)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

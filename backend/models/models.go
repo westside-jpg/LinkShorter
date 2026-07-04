@@ -1,10 +1,7 @@
 package models
 
-import "time"
-
 type Link struct {
-	ID          int
-	OriginalURL string
-	ShortURL    string
-	CreatedAt   time.Time
+	ShortURL    string `json:"short"`
+	OriginalURL string `json:"original"`
+	Views       int    `json:"views"`
 }

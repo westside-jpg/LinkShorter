@@ -2,6 +2,7 @@ package routers
 
 import (
 	jwt_service "LinkShorter/jwt"
+	"LinkShorter/models"
 	"LinkShorter/services"
 	"errors"
 	"log"
@@ -33,11 +34,6 @@ type CreateLoginRequest struct {
 
 type ResendEmail struct {
 	Email string `json:"email"`
-}
-
-type Link struct {
-	ShortURL    string `json:"short"`
-	OriginalURL string `json:"original"`
 }
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
@@ -112,6 +108,14 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		err = services.IncreaseLinkViews(db, code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка подсчета статистики",
+			})
+			return
+		}
+
 		c.Redirect(http.StatusFound, originalURL)
 	})
 
@@ -132,7 +136,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		if len(links) == 0 {
-			c.JSON(http.StatusOK, gin.H{"results": []Link{}})
+			c.JSON(http.StatusOK, gin.H{"results": []models.Link{}})
 			return
 		}
 
