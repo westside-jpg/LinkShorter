@@ -5,6 +5,7 @@ import (
 	"LinkShorter/models"
 	"LinkShorter/services"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -34,6 +35,11 @@ type CreateLoginRequest struct {
 
 type ResendEmail struct {
 	Email string `json:"email"`
+}
+
+type CheckCode struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
 }
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
@@ -391,4 +397,100 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			"message_success": "Письмо успешно отправлено",
 		})
 	})
+
+	r.POST("/api/reset-password/send-code", func(c *gin.Context) {
+		var req ResendEmail
+		err := c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		exist, err := services.IsEmailInDatabase(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if exist == false {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Пользователь не найден",
+			})
+			return
+		}
+
+		couldResend, time, err := services.CouldResendEmail(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		seconds := int(time.Seconds())
+		if couldResend == false {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": fmt.Sprintf(
+					"Слишком частые запросы на отправку письма, подождите %d %s",
+					seconds,
+					services.DeclinationWord(seconds, "секунда", "секунды", "секунд"),
+				),
+			})
+			return
+		}
+
+		code := services.GenerateVerificationCode()
+		err = services.PasswordResetEmail(req.Email, code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка отправки письма. Попробуйте позже",
+			})
+			return
+		}
+
+		err = services.AddPasswordResetCodeToDatabase(db, req.Email, code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
+
+	})
+
+	r.POST("/api/reset-password/check-code", func(c *gin.Context) {
+		var req CheckCode
+		err := c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		exist, err := services.CheckResetPasswordCode(db, req.Email, req.Code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if exist == false {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Код введен неверно",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
+
+	})
+
 }

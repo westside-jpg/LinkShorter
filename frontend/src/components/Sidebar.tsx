@@ -271,7 +271,7 @@ function Sidebar({ isOpen }: SidebarProps) {
                         : "hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
                     }`}
                     onClick={() => { void resendEmail() }}>
-                        {isLoading ? "Подождите" : "Отправить письмо еще раз"}
+                        {isLoading ? "Подождите..." : "Отправить письмо еще раз"}
                     </button>
                 </div>
             )}
@@ -369,6 +369,7 @@ function Sidebar({ isOpen }: SidebarProps) {
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
+                    <Link to="/reset-password" className="ml-2 cursor-pointer underline text-blue-600">Я забыл пароль</Link>
                     {errors.length > 0 && errors.map((e, i) => (
                         <p key={i} className="text-red-500 text-sm text-center">{e}</p>
                     ))}

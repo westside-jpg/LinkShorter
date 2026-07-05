@@ -4,6 +4,7 @@ import (
 	"LinkShorter/models"
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"regexp"
@@ -502,9 +503,9 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 	}
 
 	elapsed := time.Since(lastSendTime)
-	remaining := (time.Minute * 3) - elapsed
+	remaining := time.Minute - elapsed
 
-	if time.Since(lastSendTime) < (time.Minute * 3) {
+	if time.Since(lastSendTime) < time.Minute {
 		return false, remaining, nil
 	}
 
@@ -668,4 +669,119 @@ func IncreaseLinkViews(db *pgxpool.Pool, code string) error {
 	}
 
 	return nil
+}
+
+func GenerateVerificationCode() string {
+	return fmt.Sprintf("%06d", rand.Intn(1000000))
+}
+
+func PasswordResetEmail(email string, code string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("SMTP_USER"))
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Код подтверждения LinkShorter")
+	m.SetBody("text/html", `
+	<!DOCTYPE html>
+	<html lang="ru">
+	<head>
+		<meta charset="UTF-8">
+	</head>
+	<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
+		<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:40px 0;">
+			<tr>
+				<td align="center">
+					<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+						<tr>
+							<td align="center">
+								<h1 style="margin:0;color:#333;font-size:28px;">
+									Подтверждение почты
+								</h1>
+								<p style="margin:24px 0 16px;color:#555;font-size:16px;line-height:1.6;">
+									Для подтверждения адреса электронной почты,
+									чтобы сменить пароль от аккаунта, используйте следующий код
+								</p>
+								<div style="
+									display:inline-block;
+									background:#2563eb;
+									color:#ffffff;
+									font-size:34px;
+									font-weight:bold;
+									letter-spacing:8px;
+									padding:18px 36px;
+									border-radius:10px;
+									margin:16px 0;">
+									`+code+`
+								</div>
+								<p style="margin:24px 0 0;color:#777;font-size:14px;">
+									Код действителен <strong>15 минут</strong>
+								</p>
+								<hr style="margin:32px 0;border:none;border-top:1px solid #e5e7eb;">
+								<p style="margin:0;color:#999;font-size:13px;line-height:1.5;">
+									Если Вы не запрашивали этот код, просто проигнорируйте это письмо
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+	</html>
+	`)
+
+	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	d := gomail.NewDialer(
+		os.Getenv("SMTP_HOST"),
+		port,
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+	return d.DialAndSend(m)
+}
+
+func AddPasswordResetCodeToDatabase(db *pgxpool.Pool, email string, code string) error {
+	_, err := db.Exec(
+		context.Background(),
+		`UPDATE users SET reset_password_code=$1, last_send=$2 WHERE email=$3`,
+		code, time.Now().UTC(), email)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CheckResetPasswordCode(db *pgxpool.Pool, email string, code string) (bool, error) {
+	var userID int
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT id FROM users WHERE email=$1 AND reset_password_code=$2`,
+		email, code).Scan(&userID)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+
+}
+
+func DeclinationWord(n int, one, two, many string) string {
+	lastTwoDigits := n % 100
+
+	if lastTwoDigits >= 11 && lastTwoDigits <= 14 {
+		return many
+	}
+
+	switch n % 10 {
+	case 1:
+		return one
+	case 2, 3, 4:
+		return two
+	default:
+		return many
+	}
 }
