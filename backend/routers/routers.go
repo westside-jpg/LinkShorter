@@ -447,7 +447,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		err = services.PasswordResetEmail(req.Email, code)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Ошибка отправки письма. Попробуйте позже",
+				"error": "Ошибка отправки письма. \n Попробуйте позже",
 			})
 			return
 		}
@@ -457,6 +457,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. \n Попробуйте позже",
 			})
+			println(err.Error())
 			return
 		}
 
@@ -474,7 +475,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		exist, err := services.CheckResetPasswordCode(db, req.Email, req.Code)
+		exist, err := services.IsEmailInDatabase(db, req.Email)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. \n Попробуйте позже",
@@ -484,7 +485,54 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		if exist == false {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Код введен неверно",
+				"error": "Пользователь не найден",
+			})
+			return
+		}
+
+		exist, err = services.CheckResetPasswordCode(db, req.Email, req.Code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if exist == false {
+			attempts, err := services.DecreaseResetPasswordAttempts(db, req.Email)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Ошибка базы данных. \n Попробуйте позже",
+				})
+				return
+			}
+
+			if attempts == 0 {
+				c.JSON(http.StatusTooManyRequests, gin.H{
+					"error":    "Попытки ввода закончились. Запросите новый код",
+					"attempts": 0,
+				})
+				return
+			}
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":    "Код введен неверно. \n Попыток осталось: ",
+				"attempts": attempts,
+			})
+			return
+		}
+
+		isFresh, err := services.IsCodeFresh(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if isFresh == false {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Код устарел, запросите новый",
 			})
 			return
 		}

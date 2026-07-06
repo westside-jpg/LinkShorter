@@ -12,6 +12,7 @@ function ResetPassword() {
     const [isLoading, setIsLoading] = useState(false)
     const [timeWait, setTimeWait] = useState(60)
     const [timerRunning, setTimerRunning] = useState(false)
+    const [attemptsLeft, setAttemptsLeft] = useState(5)
 
     const disabledButtonAttributes = `disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500
     disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:border-gray-300
@@ -40,6 +41,51 @@ function ResetPassword() {
             setCouldResend(true)
         }
     }, [timeWait])
+
+    // Глобальный слушатель клавиатуры
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                if (step === 1) {
+                    if (ValidateEmail(email)) {
+                        if (email == lastEmail && timeWait > 0) {
+                            goToStep(2)
+                            return
+                        }
+                        void SendResetPasswordEmail()
+                    }
+                } else if (step === 2) {
+                    void CheckResetPasswordCode()
+                }
+            }
+
+            if (step === 2) {
+                if (/^\d$/.test(e.key) && code.length < 6) {
+                    setCode(prev => prev + e.key)
+                } else if (e.key === "Backspace" || e.key === "Delete") {
+                    setCode(prev => prev.slice(0, -1))
+                }
+            }
+        }
+
+        const handlePaste = (e: ClipboardEvent) => {
+            if (step !== 2) return
+            e.preventDefault()
+            const digits = (e.clipboardData?.getData("text") ?? "")
+                .replace(/\D/g, "")
+                .slice(0, 6)
+            setCode(digits)
+        }
+
+
+        window.addEventListener("keydown", handleKeyDown)
+        window.addEventListener("paste", handlePaste)
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown)
+            window.removeEventListener("paste", handlePaste)
+        }
+    }, [step, email, code, isLoading, lastEmail, timeWait])
 
     const goToStep = (newStep: number) => {
         setVisible(false)
@@ -106,6 +152,7 @@ function ResetPassword() {
                 setTimeWait(60)
                 setCouldResend(false)
                 setTimerRunning(true)
+                setAttemptsLeft(5)
             } else {
                 if (step == 1) {
                     toast.error(data["error"])
@@ -119,7 +166,7 @@ function ResetPassword() {
     }
 
     const CheckResetPasswordCode = async() => {
-        if (code.length < 6) {
+        if (code.length != 6) {
             toast.error("Введите код полностью")
             return
         }
@@ -139,7 +186,16 @@ function ResetPassword() {
             if (response.ok) {
                 goToStep(3)
             } else {
-                toast.error(data["error"])
+                if (data["attempts"] != undefined) { // если ошибка вызвана неправильным кодом
+                    setAttemptsLeft(data["attempts"])
+                    if (data["attempts"] != 0) { // если остались попытки ввода
+                        toast.error(`${data["error"]} ${data["attempts"]}`) // показываем их количество
+                    } else {
+                        toast.error(data["error"]) // иначе только ошибку без количества
+                    }
+                } else {
+                    toast.error(data["error"]) // если ошибка не вызвана неправильным кодом (ошибка бд и тд)
+                }
             }
         } catch (err) {
             toast.error("Не удалось связаться с сервером")
@@ -230,7 +286,7 @@ function ResetPassword() {
                         inputMode="numeric"
                         maxLength={6}
                         value={code}
-                        onChange={e => setCode(e.target.value.replace(/\D/g, ""))} // только цифры
+                        readOnly
                         className="absolute opacity-0 w-0 h-0"
                         id="code-input"
                     />
@@ -258,18 +314,18 @@ function ResetPassword() {
                         hover:shadow-lg hover:shadow-green-500/50
                         transition-all duration-200 cursor-pointer group
                         ${disabledButtonAttributes}`}
-                        disabled={isLoading}
+                        disabled={isLoading || attemptsLeft == 0}
                         onClick={() => {
                             void CheckResetPasswordCode()
                         }}>
             <span className={`transition-all duration-200 
-            ${isLoading ? "group-hover:opacity-100" : "group-hover:opacity-0"}`}>
+            ${(isLoading || attemptsLeft == 0) ? "group-hover:opacity-100" : "group-hover:opacity-0"}`}>
                 {isLoading ? "Подождите..." : "Подтвердить"}
             </span>
                         <img
                             src="/apply.svg"
                             className={`absolute inset-0 m-auto w-5 h-5 opacity-0 scale-75
-                ${isLoading ? "group-hover:opacity-0" : "group-hover:opacity-100"} group-hover:scale-100
+                ${(isLoading || attemptsLeft == 0) ? "group-hover:opacity-0" : "group-hover:opacity-100"} group-hover:scale-100
                 transition-all duration-200`}
                          alt={isLoading ? "Подождите..." : "Подтвердить"}/>
                     </button>

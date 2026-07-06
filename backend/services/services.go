@@ -742,7 +742,7 @@ func PasswordResetEmail(email string, code string) error {
 func AddPasswordResetCodeToDatabase(db *pgxpool.Pool, email string, code string) error {
 	_, err := db.Exec(
 		context.Background(),
-		`UPDATE users SET reset_password_code=$1, last_send=$2 WHERE email=$3`,
+		`UPDATE users SET reset_password_code=$1, last_send=$2, reset_password_attempts=5 WHERE email=$3`,
 		code, time.Now().UTC(), email)
 
 	if err != nil {
@@ -767,6 +767,43 @@ func CheckResetPasswordCode(db *pgxpool.Pool, email string, code string) (bool, 
 
 	return true, nil
 
+}
+
+func IsCodeFresh(db *pgxpool.Pool, email string) (bool, error) {
+	var valid bool
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT EXISTS(
+			SELECT 1
+			FROM users
+			WHERE email = $1
+			  AND NOW() < last_send + INTERVAL '15 minutes'
+		)`, email).Scan(&valid)
+
+	if err != nil {
+		return false, err
+	}
+
+	return valid, nil
+}
+
+func DecreaseResetPasswordAttempts(db *pgxpool.Pool, email string) (int, error) {
+	var attempts int
+
+	err := db.QueryRow(
+		context.Background(),
+		`UPDATE users
+		SET reset_password_attempts = GREATEST(reset_password_attempts - 1, 0)
+		WHERE email = $1
+		RETURNING reset_password_attempts`,
+		email,
+	).Scan(&attempts)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return attempts, nil
 }
 
 func DeclinationWord(n int, one, two, many string) string {

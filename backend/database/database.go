@@ -50,6 +50,7 @@ func CreateTables(db *pgxpool.Pool) error {
 		    verification_code TEXT NOT NULL DEFAULT '',
 		    reset_password_code TEXT NOT NULL DEFAULT '',
 		    last_send TIMESTAMPTZ,
+		    reset_password_attempts INT DEFAULT 5,
 		    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 		`,
