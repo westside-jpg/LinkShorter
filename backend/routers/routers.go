@@ -45,6 +45,7 @@ type CheckCode struct {
 type ResetPassword struct {
 	NewPassword     string `json:"new_password"`
 	ConfirmPassword string `json:"confirm_password"`
+	Email           string `json:"email"`
 }
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
@@ -566,6 +567,44 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		var errs []string
+		if len(newPassword) < 8 {
+			errs = append(errs, "Минимальная длина пароля 8 символов")
+		}
+		if len(newPassword) > 72 {
+			errs = append(errs, "Максимальная длина пароля 72 символа")
+		}
+		if !services.IsPasswordStrong(newPassword) {
+			errs = append(errs, "Пароль должен содержать заглавную букву, строчную букву и цифру")
+		}
+		if !services.IsValidPassword(newPassword) {
+			errs = append(errs, "Пароль содержит недопустимые символы")
+		}
+
+		if len(errs) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errors": errs,
+			})
+			return
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{"Ошибка сервера. Попробуйте позже"},
+			})
+			return
+		}
+
+		err = services.ResetPassword(db, req.Email, string(hashedPassword))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
 	})
 
 }

@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react"
 import {Link} from "react-router-dom";
 import { toast } from "sonner"
+import confetti from 'canvas-confetti'
 
 function ResetPassword() {
     const [step, setStep] = useState(1)
@@ -67,6 +68,8 @@ function ResetPassword() {
                         goToStep(3)
                     else
                         void CheckResetPasswordCode()
+                } else if (step == 3) {
+                    void ChangePassword()
                 }
             }
 
@@ -97,6 +100,66 @@ function ResetPassword() {
             window.removeEventListener("paste", handlePaste)
         }
     }, [step, email, code, isLoading, lastEmail, timeWait, isReachStep3, codeExpiresAt, isCodeVerified])
+
+    // Конфетти
+    useEffect(() => {
+        if (step === 4) {
+            const count = 350;
+            const defaults = {
+                origin: { y: 0.5 }
+            };
+
+            function fire(particleRatio: number, opts: any) {
+                confetti({
+                    ...defaults,
+                    ...opts,
+                    particleCount: Math.floor(count * particleRatio)
+                });
+            }
+
+            fire(0.25, {
+                spread: 40,
+                startVelocity: 65,
+            });
+            fire(0.2, {
+                spread: 80,
+                startVelocity: 45,
+            });
+            fire(0.3, {
+                spread: 120,
+                decay: 0.9,
+                scalar: 0.9,
+                startVelocity: 35,
+            });
+            fire(0.15, {
+                spread: 150,
+                startVelocity: 30,
+                decay: 0.91,
+                scalar: 1.1
+            });
+            fire(0.1, {
+                spread: 180,
+                startVelocity: 50,
+                decay: 0.92,
+                scalar: 1.3
+            });
+
+            setTimeout(() => {
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.3, x: 0.2 },
+                    colors: ['#ff6b6b', '#ffd93d', '#4ecdc4']
+                });
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.3, x: 0.8 },
+                    colors: ['#45b7d1', '#96ceb4', '#6c5ce7']
+                });
+            }, 300);
+        }
+    }, [step])
 
     const goToStep = (newStep: number) => {
         setVisible(false)
@@ -236,13 +299,48 @@ function ResetPassword() {
             toast.error("Пароли не совпадают")
             return
         }
-        // fetch к /api/reset-password
+
+        try {
+            setIsLoading(true)
+            const response = await fetch("http://localhost:8080/api/reset-password", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    email: email,
+                    new_password: newPassword.trim(),
+                    confirm_password: confirmPassword.trim()
+                })
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                goToStep(4)
+            } else {
+                if (data["error"]) {
+                    toast.error(data["error"])
+                } else if (data["errors"]) {
+                    toast.error(
+                        <div className="flex flex-col gap-3 text-center">
+                            {data["errors"].map((error: string, index: number) => (
+                                <div key={index}>{error}</div>
+                            ))}
+                        </div>
+                    )
+                }
+            }
+        } catch (err) {
+            toast.error("Не удалось связаться с сервером")
+        } finally {
+            setIsLoading(false)
+        }
+
     }
 
     return (
         <div className="flex justify-center items-center min-h-screen">
 
-            <Link
+            {step != 4 && (<Link
                 to={step == 1 ? "/" : "#"}
                 className="fixed top-4 left-4 flex flex-row items-center gap-2
                 border-2 rounded-xl px-4 py-2 font-bold
@@ -251,7 +349,7 @@ function ResetPassword() {
                 hover:shadow-lg hover:shadow-blue-500/50
                 transition-all duration-200 cursor-pointer group"
                 onClick={() => {
-                    if (isLoading) return;
+                    if (isLoading) return
                     if (step == 2) setLastEmail(email)
                     if (step == 2) setIsReachStep3(false)
                     if (step !== 1) goToStep(step - 1)
@@ -262,8 +360,9 @@ function ResetPassword() {
                     alt="Назад"
                     className="w-5 h-5 rotate-180 invert group-hover:filter-none transition-all duration-200"
                 />
-                <span key={step} className="text-base animate-fade-in translate-y-px">{step == 1 ? "На главную" : "Назад"}</span>
-            </Link>
+                <span key={step}
+                      className="text-base animate-fade-in translate-y-px">{step == 1 ? "На главную" : "Назад"}</span>
+            </Link>)}
 
             {step == 1 && (
                 <div className={`flex flex-col gap-4 w-96 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
@@ -443,6 +542,7 @@ function ResetPassword() {
                         <input
                             type="password"
                             placeholder="Введите пароль"
+                            maxLength={72}
                             className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200"
                             onChange={e => setNewPassword(e.target.value)}
                         />
@@ -453,6 +553,7 @@ function ResetPassword() {
                         <input
                             type="password"
                             placeholder="Повторите пароль"
+                            maxLength={72}
                             className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200"
                             onChange={e => setConfirmPassword(e.target.value)}
                         />
@@ -489,6 +590,25 @@ function ResetPassword() {
                         </p>
                     </div>
 
+                </div>
+            )}
+
+            {step == 4 && (
+                <div className={`flex flex-col gap-6 w-96 items-center transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
+                    <p className="text-xl text-center whitespace-pre-line">
+                        Готово, пароль успешно изменён! {"\n"}
+                        Можете возвращаться на главную
+                    </p>
+                    <Link
+                        to="/"
+                        className="border-2 rounded-xl px-8 py-2 font-bold
+                        hover:bg-blue-600 hover:border-blue-600 hover:text-white
+                        active:bg-blue-500 active:border-blue-500 active:text-white
+                        hover:shadow-lg hover:shadow-blue-500/50
+                        transition-all duration-200 cursor-pointer"
+                    >
+                        Вернуться на главную
+                    </Link>
                 </div>
             )}
         </div>

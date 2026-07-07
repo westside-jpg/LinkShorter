@@ -822,3 +822,16 @@ func DeclinationWord(n int, one, two, many string) string {
 		return many
 	}
 }
+
+func ResetPassword(db *pgxpool.Pool, email string, password string) error {
+	_, err := db.Exec(
+		context.Background(),
+		`UPDATE users SET password=$1 WHERE email=$2`,
+		password, email)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
