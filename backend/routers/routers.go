@@ -42,6 +42,11 @@ type CheckCode struct {
 	Code  string `json:"code"`
 }
 
+type ResetPassword struct {
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	r.POST("/create-link", func(c *gin.Context) {
@@ -538,6 +543,28 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{})
+
+	})
+
+	r.POST("/api/reset-password", func(c *gin.Context) {
+		var req ResetPassword
+		err := c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		newPassword := strings.TrimSpace(req.NewPassword)
+		confirmPassword := strings.TrimSpace(req.ConfirmPassword)
+
+		if newPassword != confirmPassword {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Пароли не совпадают",
+			})
+			return
+		}
 
 	})
 
