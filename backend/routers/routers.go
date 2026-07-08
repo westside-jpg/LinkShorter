@@ -45,7 +45,7 @@ type CheckCode struct {
 type ResetPassword struct {
 	NewPassword     string `json:"new_password"`
 	ConfirmPassword string `json:"confirm_password"`
-	Email           string `json:"email"`
+	ResetToken      string `json:"reset_token"`
 }
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
@@ -543,7 +543,17 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{})
+		resetToken, err := jwt_service.GenerateResetPasswordJWT(req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка сервера",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"reset_token": resetToken,
+		})
 
 	})
 
@@ -588,6 +598,28 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		token, err := jwt.Parse(req.ResetToken, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
+
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Токен недействителен или истёк",
+			})
+			return
+		}
+
+		claims := token.Claims.(jwt.MapClaims)
+
+		if claims["purpose"] != "reset_password" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Неверный тип токена",
+			})
+			return
+		}
+
+		email := claims["email"].(string)
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 10)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -596,7 +628,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		err = services.ResetPassword(db, req.Email, string(hashedPassword))
+		err = services.ResetPassword(db, email, string(hashedPassword))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. \n Попробуйте позже",

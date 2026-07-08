@@ -19,6 +19,7 @@ function ResetPassword() {
     const [isReachStep3, setIsReachStep3] = useState(false)
     const [codeExpiresAt, setCodeExpiresAt] = useState<number | null>(null)
     const [isCodeVerified, setIsCodeVerified] = useState(false)
+    const [resetToken, setResetToken] = useState("")
 
     const disabledButtonAttributes = `disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500
     disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:border-gray-300
@@ -266,6 +267,7 @@ function ResetPassword() {
             const data = await response.json()
 
             if (response.ok) {
+                setResetToken(data["reset_token"])
                 goToStep(3)
                 setIsReachStep3(true)
                 setIsCodeVerified(true)
@@ -306,7 +308,7 @@ function ResetPassword() {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
-                    email: email,
+                    reset_token: resetToken,
                     new_password: newPassword.trim(),
                     confirm_password: confirmPassword.trim()
                 })
