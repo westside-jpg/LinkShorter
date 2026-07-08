@@ -15,6 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	qrcode "github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -642,4 +643,32 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.JSON(http.StatusOK, gin.H{})
 	})
 
+	r.GET("/api/qr/:code", func(c *gin.Context) {
+		code := c.Param("code")
+
+		_, err := services.ReturnOriginalLink(db, code)
+
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				c.JSON(http.StatusNotFound, gin.H{
+					"error": "Ссылки не существует",
+				})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка сервера",
+			})
+			return
+		}
+
+		png, err := qrcode.Encode("http://localhost:8080/"+code, qrcode.Medium, 256)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка создания QR-кода",
+			})
+			return
+		}
+
+		c.Data(http.StatusOK, "image/png", png)
+	})
 }

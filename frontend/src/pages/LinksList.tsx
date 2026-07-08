@@ -5,6 +5,7 @@ function LinksList() {
     const [results, setResults] = useState<{short?: string, original?: string, views?: number}[]>([])
     const [message, setMessage] = useState("")
     const [loading, setLoading] = useState(true)
+    const [openQRIndex, setOpenQRIndex] = useState<number | null>(null)
 
     const showLinks = async () => {
         try {
@@ -53,6 +54,8 @@ function LinksList() {
                         short={item.short}
                         original={item.original}
                         views={item.views}
+                        isQROpen={openQRIndex === index}
+                        onQRToggle={() => setOpenQRIndex(openQRIndex === index ? null : index)}
                     />
                 ))}
 

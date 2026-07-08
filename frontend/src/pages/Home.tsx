@@ -7,6 +7,7 @@ function Home() {
         useState<{type: "success" | "error", short?: string, original?: string, message?: string}[]>([])
     const [novalue, setNoValue] = useState("")
     const [verifiedMessage, setVerifiedMessage] = useState("")
+    const [openQRIndex, setOpenQRIndex] = useState<number | null>(null)
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search)
@@ -117,6 +118,8 @@ function Home() {
                             short={item.short}
                             original={item.original}
                             error={item.message}
+                            isQROpen={openQRIndex === index}
+                            onQRToggle={() => setOpenQRIndex(openQRIndex === index ? null : index)}
                         />
                     ))}
                 </div>
