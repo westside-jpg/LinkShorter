@@ -148,7 +148,10 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		if len(links) == 0 {
-			c.JSON(http.StatusOK, gin.H{"results": []models.Link{}})
+			c.JSON(http.StatusOK, gin.H{
+				"results": []models.Link{},
+				"message": "Вы еще не зашортили ни одной ссылки",
+			})
 			return
 		}
 
