@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import { useAuth } from "../context/AuthContext"
 import {Link, useLocation} from "react-router-dom";
+import {toast} from "sonner";
 
 type SidebarProps = {
     isOpen: boolean
@@ -233,8 +234,30 @@ function Sidebar({ isOpen }: SidebarProps) {
         }
     }
 
+    const Logout = async () => {
+        setIsLoading(true)
+        try {
+            const response = await fetch("http://localhost:8080/logout", {
+                credentials: "include"
+            })
+
+            if (response.ok) {
+                toast.info("Вы вышли из аккаунта")
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1000)
+            } else {
+                toast.error("Неизвестная ошибка")
+            }
+        } catch (err) {
+            toast.error("Не удалось связаться с сервером")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     return (
-        <div className={`fixed top-0 right-0 h-full w-90 bg-white shadow-xl shadow-white rounded-tl-4xl rounded-bl-4xl z-50
+        <div className={`fixed flex flex-col top-0 right-0 h-full w-90 bg-white shadow-xl shadow-white rounded-tl-4xl rounded-bl-4xl z-50
             transform transition-transform duration-300
             ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
 
@@ -374,12 +397,14 @@ function Sidebar({ isOpen }: SidebarProps) {
                         <p key={i} className="text-red-500 text-sm text-center">{e}</p>
                     ))}
                     <button className={`flex-1 border-2 rounded-xl text-center px-4 py-1.5
-              hover:bg-blue-600 hover:border-blue-600 hover:text-white
-              active:bg-blue-500 active:border-blue-500 active:text-white
-                hover:shadow-lg hover:shadow-blue-500/50
-                transition-[background-color,border-color,color,box-shadow] duration-200 cursor-pointer
+                transition-[background-color,border-color,color,box-shadow] duration-200
+                ${isLoading ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
+                        : "hover:bg-blue-600 hover:border-blue-600 hover:text-white" +
+                        " active:bg-blue-500 active:border-blue-500 active:text-white" +
+                        " hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"}
                             ${errors.length > 0 ? "mt-0" : "mt-5" }`}
-                 onClick={() => { void handleLogin() }}>
+                            onClick={() => { void handleLogin() }}
+                            >
                         {isLoading ? "Подождите..." : "Войти"}
                     </button>
                 </div>
@@ -393,6 +418,31 @@ function Sidebar({ isOpen }: SidebarProps) {
                     <Link to="/my-links" className={menuItemClass("/my-links")}>
                         Мои ссылки
                     </Link>
+                </div>
+            )}
+
+            {isMenu && (
+                <div className="mt-auto px-6 pb-6">
+                    <button className={`relative w-full border-2 rounded-xl px-4 py-1.5 
+                    text-center overflow-hidden group transition-all duration-200 cursor-pointer
+                    ${isLoading ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed pointer-events-none"
+                        : "hover:bg-red-600 hover:border-red-600 hover:text-white " +
+                          "active:bg-red-500 active:border-red-500 active:text-white" +
+                          " hover:shadow-lg hover:shadow-red-500/50"}`}
+                    onClick={() => { void Logout() }}>
+
+                        <span className="transition-all duration-200 group-hover:opacity-0">
+                             {isLoading ? "Подождите..." : "Выйти из аккаунта"}
+                        </span>
+
+                        <img
+                            src="/logout.svg"
+                            alt="Выйти из аккаунта"
+                            className="absolute inset-0 m-auto w-5 h-5 opacity-0
+                            group-hover:opacity-100 transition-all duration-200"
+                        />
+
+                    </button>
                 </div>
             )}
 

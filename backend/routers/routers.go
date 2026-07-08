@@ -379,6 +379,14 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		_, err = services.GetUserIdFromJWT(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка токена. Попробуйте перезайти в аккаунт",
+			})
+			return
+		}
+
 		couldResend, time, err := services.CouldResendEmail(db, req.Email)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -670,5 +678,13 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		c.Data(http.StatusOK, "image/png", png)
+	})
+
+	r.GET("/logout", func(c *gin.Context) {
+		c.SetCookie("token", "", -1, "/", "localhost", false, true)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Вы вышли из аккаунта",
+		})
 	})
 }
