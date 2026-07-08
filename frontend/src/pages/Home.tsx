@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import LinkCard from "../components/LinkCard.tsx";
 
 function Home() {
     const [inputURL, setInputURL] = useState("")
@@ -111,25 +112,12 @@ function Home() {
 
                 <div className="flex flex-col gap-3 w-150">
                     {results.map((item, index) => (
-                        <div key={index} className={`border-2 rounded-xl px-4 py-3 flex flex-col gap-1
-                            ${item.type === "error" ? "border-red-500 bg-red-50" : "border-blue-600 bg-blue-50"}`}>
-                            {item.type === "success" ? (
-                                <>
-                                    <p className="text-blue-600 font-bold">
-                                        <a href={`http://${item.short}`}
-                                           className="text-blue-600 hover:underline"
-                                           target="_blank">{item.short}</a>
-                                    </p>
-                                    <p className="text-gray-400 text-sm">
-                                        <a href={item.original}
-                                           className="text-gray-400 hover:underline"
-                                           target="_blank">{item.original}</a>
-                                    </p>
-                                </>
-                            ) : (
-                                <p className="text-red-500">{item.message}</p>
-                            )}
-                        </div>
+                        <LinkCard
+                            key={index}
+                            short={item.short}
+                            original={item.original}
+                            error={item.message}
+                        />
                     ))}
                 </div>
 
