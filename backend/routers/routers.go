@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -686,5 +687,33 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Вы вышли из аккаунта",
 		})
+	})
+
+	r.DELETE("/delete-link/:id", func(c *gin.Context) {
+		linkID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неверный ID ссылки",
+			})
+			return
+		}
+
+		userID, err := services.GetUserIdFromJWT(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Ошибка токена. \n Попробуйте перезайти в аккаунт",
+			})
+			return
+		}
+
+		err = services.DeleteLink(db, linkID, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка удаления ссылки",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
 	})
 }

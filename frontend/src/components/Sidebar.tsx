@@ -242,7 +242,7 @@ function Sidebar({ isOpen }: SidebarProps) {
             })
 
             if (response.ok) {
-                toast.info("Вы вышли из аккаунта")
+                toast.success("Вы вышли из аккаунта")
                 setTimeout(() => {
                     window.location.reload()
                 }, 1000)

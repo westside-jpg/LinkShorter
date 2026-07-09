@@ -2,18 +2,22 @@ import {useEffect, useState} from "react"
 import {toast} from "sonner"
 
 interface LinkCardProps {
-    short?: string
-    original?: string
-    views?: number
-    error?: string
-    isQROpen: boolean
+    id?:        number
+    short?:     string
+    original?:  string
+    views?:     number
+    error?:     string
+    isQROpen:   boolean
     onQRToggle: () => void
+    onDelete?:  () => void
 }
 
-function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCardProps) {
+function LinkCard({id, short, original, views, error, isQROpen, onQRToggle, onDelete}: LinkCardProps) {
     const [copied, setCopied] = useState(false)
     const [copySuccess, setCopySuccess] = useState(false)
     const [showQRImage, setShowQRImage] = useState(false)
+    const [showTrashConfirmation, setShowTrashConfirmation] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const code = short?.split("/").pop()
 
@@ -74,6 +78,29 @@ function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCar
         }
     }
 
+    const handleDelete = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/delete-link/${id}`, {
+                method: "DELETE",
+                credentials: "include"
+            })
+
+            if (response.ok) {
+                toast.success("Ссылка удалена")
+                setShowTrashConfirmation(false)
+                setIsDeleting(true)
+                if (onDelete) {
+                    setTimeout(() => onDelete(), 300)
+                }
+            } else {
+                const data = await response.json()
+                toast.error(data["error"])
+            }
+        } catch (err) {
+            console.error(err)
+            toast.error("Ошибка соединения с сервером")
+        }
+    }
 
     if (error) {
         return (
@@ -86,12 +113,51 @@ function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCar
         )
     }
 
-
     return (
-        <div className="relative border-2 rounded-xl
-        px-4 py-3 flex flex-col gap-1 border-blue-600 bg-blue-50">
+        <div className={`relative border-2 rounded-xl px-4 py-3 flex flex-col
+         gap-1 border-blue-600 bg-blue-50 transition-all duration-300
+         ${isDeleting ? "opacity-0 scale-95 -translate-y-2" : ""}`}>
 
-            <div className="absolute top-3 right-3 w-5 h-5">
+            {id !== undefined && (<div className="absolute top-3 right-3 w-5 h-5">
+                <img src="/trash.svg" alt="Удалить ссылку"
+                     className={`absolute inset-0 w-5 h-5 cursor-pointer
+                        opacity-50 hover:opacity-100 transition-all duration-300`}
+                     onClick={() => { setShowTrashConfirmation(true) }}
+                />
+            </div>)}
+
+            {showTrashConfirmation && (
+                <div
+                    className="fixed inset-0 z-9 cursor-alias"
+                    onClick={() => { setShowTrashConfirmation(false) }}
+                />
+            )}
+
+            {id !== undefined && (<div className={`absolute flex flex-col top-10 -right-28.75 mt-2 items-center justify-center
+            bg-white border-2 border-black rounded-xl p-3 shadow-lg z-10
+            transition-all duration-200
+            ${showTrashConfirmation ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-2 pointer-events-none"}`}>
+                <p>Вы точно хотите удалить ссылку?</p>
+                <div className="flex gap-2">
+                    <button className="flex-1 border-2 rounded-lg px-1 mt-2 w-30
+                    hover:scale-105 hover:bg-red-600 hover:border-red-600
+                    active:scale-110 active:bg-red-500 active:border-red-500
+                    hover:shadow-lg hover:shadow-red-500/50 hover:text-white
+                    transition-all duration-200 cursor-pointer active:text-white"
+                    onClick={() => { void handleDelete() }}>Удалить</button>
+                    <button className="flex-1 border-2 rounded-lg px-1 mt-2 w-30
+                    hover:scale-105 hover:bg-gray-600 hover:border-gray-600
+                    active:scale-110 active:bg-gray-500 active:border-gray-500
+                    hover:shadow-lg hover:shadow-gray-500/50 hover:text-white
+                    transition-all duration-200 cursor-pointer active:text-white"
+                    onClick={() => { setShowTrashConfirmation(false) }}>Отмена</button>
+                </div>
+            </div>)}
+            
+
+            <div className={`absolute top-3 w-5 h-5
+            ${id !== undefined ? "right-10" : "right-3"}`}>
                 <img src="/copy.svg" alt="Скопировать"
                      onClick={handleCopy}
                      className={`absolute inset-0 w-5 h-5 cursor-pointer
@@ -107,7 +173,8 @@ function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCar
                 />
             </div>
 
-            <div className="absolute top-3 right-10 w-5 h-5">
+            <div className={`absolute top-3 w-5 h-5
+            ${id !== undefined ? "right-17" : "right-10"}`}>
                 <img src="/qr.svg" alt="Создать QR-код"
                      className={`absolute inset-0 w-5 h-5 cursor-pointer
                         opacity-50 hover:opacity-100 transition-all duration-300`}
@@ -135,7 +202,7 @@ function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCar
                 </a>
             </p>
 
-            <div className={`absolute flex flex-col top-10 -right-10 mt-2 items-center justify-center
+            <div className={`absolute flex flex-col top-10 -right-3.75 mt-2 items-center justify-center
             bg-white border-2 border-black rounded-xl p-3 shadow-lg z-10
             transition-all duration-200
             ${isQROpen ? "opacity-100 translate-y-0 pointer-events-auto" 
@@ -164,7 +231,7 @@ function LinkCard({short, original, views, error, isQROpen, onQRToggle}: LinkCar
              окна кьюара при клике вне зоны окна */}
             {isQROpen && (
                 <div
-                    className="fixed inset-0 z-9"
+                    className="fixed inset-0 z-9 cursor-alias"
                     onClick={onQRToggle}
                 />
             )}

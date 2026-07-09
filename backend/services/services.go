@@ -515,7 +515,7 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT short_url, original_url, views FROM links WHERE user_id = $1`,
+		`SELECT id, short_url, original_url, views FROM links WHERE user_id = $1`,
 		userId,
 	)
 
@@ -528,7 +528,7 @@ func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	var links []models.Link
 	for rows.Next() {
 		var link models.Link
-		if err := rows.Scan(&link.ShortURL, &link.OriginalURL, &link.Views); err != nil {
+		if err := rows.Scan(&link.LinkID, &link.ShortURL, &link.OriginalURL, &link.Views); err != nil {
 			return nil, err
 		}
 		links = append(links, link)
@@ -828,6 +828,19 @@ func ResetPassword(db *pgxpool.Pool, email string, password string) error {
 		context.Background(),
 		`UPDATE users SET password=$1 WHERE email=$2`,
 		password, email)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteLink(db *pgxpool.Pool, linkID int, userID int) error {
+	_, err := db.Exec(
+		context.Background(),
+		`DELETE FROM links WHERE id=$1 AND user_id=$2`,
+		linkID, userID)
 
 	if err != nil {
 		return err
