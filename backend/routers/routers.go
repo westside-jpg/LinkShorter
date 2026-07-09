@@ -145,7 +145,9 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		links, err := services.UserLinks(db, userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Ошибка базы данных"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Ошибка базы данных",
+			})
 			return
 		}
 
@@ -700,7 +702,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 		userID, err := services.GetUserIdFromJWT(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Ошибка токена. \n Попробуйте перезайти в аккаунт",
 			})
 			return

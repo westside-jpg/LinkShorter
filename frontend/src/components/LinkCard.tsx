@@ -2,17 +2,18 @@ import {useEffect, useState} from "react"
 import {toast} from "sonner"
 
 interface LinkCardProps {
-    id?:        number
-    short?:     string
-    original?:  string
-    views?:     number
-    error?:     string
-    isQROpen:   boolean
-    onQRToggle: () => void
-    onDelete?:  () => void
+    id?:         number
+    short?:      string
+    original?:   string
+    views?:      number
+    error?:      string
+    created_at?: string
+    isQROpen:    boolean
+    onQRToggle:  () => void
+    onDelete?:   () => void
 }
 
-function LinkCard({id, short, original, views, error, isQROpen, onQRToggle, onDelete}: LinkCardProps) {
+function LinkCard({id, short, original, views, error, created_at, isQROpen, onQRToggle, onDelete}: LinkCardProps) {
     const [copied, setCopied] = useState(false)
     const [copySuccess, setCopySuccess] = useState(false)
     const [showQRImage, setShowQRImage] = useState(false)
@@ -42,6 +43,18 @@ function LinkCard({id, short, original, views, error, isQROpen, onQRToggle, onDe
         }
     }, [isQROpen])
 
+    function formatDateTime(isoString: any) {
+        const date = new Date(isoString)
+
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+
+        return `${hours}:${minutes} | ${day}.${month}.${year}`
+    }
 
     const handleCopy = () => {
         navigator.clipboard.writeText(short ?? "")
@@ -181,6 +194,9 @@ function LinkCard({id, short, original, views, error, isQROpen, onQRToggle, onDe
                      onClick={onQRToggle}
                 />
             </div>
+
+            <p className="absolute bottom-2 right-3
+            text-sm text-gray-400">{formatDateTime(created_at)}</p>
 
 
             <p className="text-blue-600 font-bold">

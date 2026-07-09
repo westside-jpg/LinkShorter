@@ -515,7 +515,7 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT id, short_url, original_url, views FROM links WHERE user_id = $1`,
+		`SELECT id, short_url, original_url, views, created_at FROM links WHERE user_id = $1`,
 		userId,
 	)
 
@@ -528,7 +528,7 @@ func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	var links []models.Link
 	for rows.Next() {
 		var link models.Link
-		if err := rows.Scan(&link.LinkID, &link.ShortURL, &link.OriginalURL, &link.Views); err != nil {
+		if err := rows.Scan(&link.LinkID, &link.ShortURL, &link.OriginalURL, &link.Views, &link.CreatedAt); err != nil {
 			return nil, err
 		}
 		links = append(links, link)
