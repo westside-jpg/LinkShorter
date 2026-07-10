@@ -12,9 +12,10 @@ interface LinkCardProps {
     isQROpen:    boolean
     onQRToggle:  () => void
     onDelete?:   () => void
+    onChange?:   () => void
 }
 
-function LinkCard({id, short, original, views, error, created_at, isQROpen, onQRToggle, onDelete, tag}: LinkCardProps) {
+function LinkCard({id, short, original, views, error, created_at, isQROpen, onQRToggle, onDelete, tag, onChange}: LinkCardProps) {
     const [copied, setCopied] = useState(false)
     const [copySuccess, setCopySuccess] = useState(false)
     const [showQRImage, setShowQRImage] = useState(false)
@@ -117,8 +118,9 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                 setShowTrashConfirmation(false)
                 setIsDeleting(true)
                 if (onDelete) {
-                    setTimeout(() => onDelete(), 300)
+                    setTimeout(() => onDelete(), 300) // для плавного удаления из родителя
                 }
+                setTimeout(() => onChange?.(), 300) // для пересортировки после анимаций
             } else {
                 const data = await response.json()
                 toast.error(data["error"])
@@ -145,6 +147,7 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
             if (response.ok) {
                 setCurrentTag(tagValue)
                 setTagInputActive(false)
+                setTimeout(() => onChange?.(), 300) // для пересортировки после анимаций
             } else {
                 toast.error(data["error"])
             }
@@ -238,10 +241,12 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                      className={`absolute inset-0 w-5 h-5 cursor-pointer
                         opacity-50 hover:opacity-100 transition-all duration-300`}
                      onClick={() => {
-                         if (tagInputActive) {
-                             setTagValue(currentTag)
-                         }
                          setTagInputActive(!tagInputActive)
+                         if (tagInputActive) {
+                             setTimeout(() => {
+                                 setTagValue(currentTag)
+                             }, 300)
+                         }
                      }}
                 />
             </div>)}

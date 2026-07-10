@@ -148,14 +148,19 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		search := c.DefaultQuery("search", "")
 		sortBy := c.DefaultQuery("sort", "date")
 		orderBy := c.DefaultQuery("order", "desc")
+		filterPeriod := c.DefaultQuery("period", "all")
+		filterViews := c.DefaultQuery("views", "0+")
+		filterTags := c.DefaultQuery("tags", "all")
 
-		links, err := services.UserLinks(db, userID, sortBy, orderBy)
+		links, err := services.UserLinks(db, userID, search, sortBy, orderBy, filterPeriod, filterViews, filterTags)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Ошибка базы данных",
 			})
+			fmt.Println(err)
 			return
 		}
 

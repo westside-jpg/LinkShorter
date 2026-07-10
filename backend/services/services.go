@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
@@ -512,13 +513,28 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 	return true, 0, nil
 }
 
-func UserLinks(db *pgxpool.Pool, userId int, sortBy string, orderBy string) ([]models.Link, error) {
+func UserLinks(db *pgxpool.Pool,
+	userId int,
+	search string,
+	sortBy string,
+	orderBy string,
+	filterPeriod string,
+	filterViews string,
+	filterTags string) ([]models.Link, error) {
+
+	var searchQuery = ""
+	if strings.TrimSpace(search) != "" {
+		searchQuery = "AND tag ILIKE $2"
+	}
+
 	var sortColumn string
 	switch sortBy {
 	case "date":
 		sortColumn = "created_at"
 	case "views":
 		sortColumn = "views"
+	case "tag":
+		sortColumn = `LOWER(tag) COLLATE "ru-x-icu"`
 	default:
 		return nil, errors.New("Неверная сортировка")
 	}
@@ -533,6 +549,48 @@ func UserLinks(db *pgxpool.Pool, userId int, sortBy string, orderBy string) ([]m
 		return nil, errors.New("Неверный порядок сортировки")
 	}
 
+	var filterPeriodQuery string
+	switch filterPeriod {
+	case "all":
+		filterPeriodQuery = ""
+	case "week":
+		filterPeriodQuery = "AND created_at >= NOW() - INTERVAL '7 days'"
+	case "month":
+		filterPeriodQuery = "AND created_at >= NOW() - INTERVAL '1 month'"
+	case "year":
+		filterPeriodQuery = "AND created_at >= NOW() - INTERVAL '1 year'"
+	default:
+		return nil, errors.New("Неверный параметр фильтрации по периоду")
+	}
+
+	var filterViewsQuery string
+	switch filterViews {
+	case "0":
+		filterViewsQuery = ""
+	case "10":
+		filterViewsQuery = "AND views >= 10"
+	case "100":
+		filterViewsQuery = "AND views >= 100"
+	case "1000":
+		filterViewsQuery = "AND views >= 1000"
+	case "10000":
+		filterViewsQuery = "AND views >= 10000"
+	default:
+		return nil, errors.New("Неверный параметр фильтрации по просмотрам")
+	}
+
+	var filterTagsQuery string
+	switch filterTags {
+	case "all":
+		filterTagsQuery = ""
+	case "with":
+		filterTagsQuery = "AND tag <> ''"
+	case "without":
+		filterTagsQuery = "AND tag = ''"
+	default:
+		return nil, errors.New("Неверный параметр фильтрации по тэгам")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT id,
 		       short_url,
@@ -542,14 +600,33 @@ func UserLinks(db *pgxpool.Pool, userId int, sortBy string, orderBy string) ([]m
 		       created_at
 		FROM links
 		WHERE user_id = $1
+		%s
+		%s
+		%s
+		%s
 		ORDER BY %s %s
-	`, sortColumn, sortOrder)
+	`, filterPeriodQuery,
+		filterViewsQuery,
+		filterTagsQuery,
+		searchQuery,
+		sortColumn, sortOrder)
 
-	rows, err := db.Query(
-		context.Background(),
-		query,
-		userId,
-	)
+	var rows pgx.Rows
+	var err error
+	if searchQuery == "" {
+		rows, err = db.Query(
+			context.Background(),
+			query,
+			userId,
+		)
+	} else {
+		rows, err = db.Query(
+			context.Background(),
+			query,
+			userId,
+			"%"+search+"%",
+		)
+	}
 
 	if err != nil {
 		return nil, err
