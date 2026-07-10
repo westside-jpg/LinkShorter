@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -760,14 +761,8 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		tag := strings.TrimSpace(req.Tag)
-		if len(tag) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Тэг не может быть пустым",
-			})
-			return
-		}
 
-		if len(tag) > 25 {
+		if utf8.RuneCountInString(tag) > 25 {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Максимальная длина 25 символов",
 			})

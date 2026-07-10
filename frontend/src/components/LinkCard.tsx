@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 import {toast} from "sonner"
 
 interface LinkCardProps {
@@ -24,8 +24,17 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
     const [currentTag, setCurrentTag] = useState(tag ?? "") // реальный тэг
     const [tagValue, setTagValue] = useState(tag ?? "") // для изменения тэга
 
-
     const code = short?.split("/").pop()
+
+    // Для автоматического переключения курсора на инпут
+    // при нажатии на кнопку изменения тэга
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (tagInputActive) {
+            inputRef.current?.focus()
+        }
+    }, [tagInputActive])
 
     // для изменения иконки при копировании
     useEffect(() => {
@@ -228,51 +237,64 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                 <img src="/tag.svg" alt="Создать тэг"
                      className={`absolute inset-0 w-5 h-5 cursor-pointer
                         opacity-50 hover:opacity-100 transition-all duration-300`}
-                     onClick={() => { setTagInputActive(!tagInputActive) }}
+                     onClick={() => {
+                         if (tagInputActive) {
+                             setTagValue(currentTag)
+                         }
+                         setTagInputActive(!tagInputActive)
+                     }}
                 />
             </div>)}
 
             {id !== undefined && <p className="absolute bottom-2 right-3
             text-sm text-gray-400">{formatDateTime(created_at)}</p>}
 
-            <div className="flex flex-row gap-2">
+            <div className="flex items-center gap-2">
                 <p className="text-blue-600 font-bold">
                     <a href={`http://${short}`}
-                       target="_blank"
-                       className="hover:underline"
-                    >
+                        target="_blank"
+                        className="hover:underline">
                         {short}
                     </a>
                 </p>
 
-                {currentTag && !tagInputActive && (
-                    <>
-                        <span className="text-gray-400">|</span>
-                        <span className="text-gray-600 font-bold">
-                            {currentTag}
-                        </span>
-                    </>
-                )}
+                <div className="relative h-6 min-w-48">
+                    <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-300
+                        ${!tagInputActive ? "opacity-100 translate-y-0" 
+                            : "opacity-0 -translate-y-2 pointer-events-none"}`}>
 
-                <div className={`flex flex-row gap-2 transition-all duration-300
-                ${tagInputActive ? "opacity-100 pointer-events-auto"
-                    : "opacity-0 pointer-events-none"}`}>
-                    <input
-                    className="border-[1.5px] border-gray-400 h-5 mt-0.5 pl-1 rounded-md
-                    focus:outline-none text-gray-600"
-                    placeholder="Введите тэг..."
-                    maxLength={25}
-                    value={tagValue}
-                    onChange={e => setTagValue(e.target.value)}/>
-                    <button className="border-[1.5px] border-gray-400 h-5 w-10 mt-0.5
-                    rounded-md group
-                    hover:bg-gray-200 hover:border-gray-400
-                    active:bg-gray-300 active:border-gray-400 hover:shadow-lg hover:scale-105
-                    active:scale-110 hover:shadow-gray-500/50 transition-all duration-200 cursor-pointer"
-                    onClick={() => { void handleTag() }}>
-                        <img alt="Подтвердить" src="/ok.svg"
-                             className="h-3 w-3 ml-3 group-hover:invert"/>
-                    </button>
+                        {currentTag && (
+                            <>
+                                <span className="text-gray-400">|</span>
+                                <span className="text-gray-600 font-bold">
+                                    {currentTag}
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-300
+                        ${tagInputActive ? "opacity-100 translate-y-0" 
+                            : "opacity-0 translate-y-2 pointer-events-none"}`}>
+                        <input className="border-[1.5px] border-gray-400 h-5 pl-1 rounded-md
+                            focus:outline-none text-gray-600"
+                            placeholder="Введите тэг..."
+                            maxLength={25}
+                            ref={inputRef}
+                            value={tagValue}
+                            onChange={e => setTagValue(e.target.value)}/>
+
+                        <button className="border-[1.5px] border-gray-400 h-5 w-10 shrink-0 rounded-md group
+                            hover:bg-gray-200 hover:border-gray-400
+                            active:bg-gray-300 active:border-gray-400
+                            hover:shadow-lg hover:scale-105
+                            active:scale-110 hover:shadow-gray-500/50
+                            transition-all duration-200 cursor-pointer"
+                            onClick={() => { void handleTag() }}>
+                            <img alt="Подтвердить" src="/ok.svg"
+                                 className="h-3 w-3 mx-auto group-hover:invert"/>
+                        </button>
+                    </div>
                 </div>
             </div>
 
