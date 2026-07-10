@@ -6,6 +6,7 @@ interface LinkCardProps {
     short?:      string
     original?:   string
     views?:      number
+    tag?:        string
     error?:      string
     created_at?: string
     isQROpen:    boolean
@@ -13,12 +14,16 @@ interface LinkCardProps {
     onDelete?:   () => void
 }
 
-function LinkCard({id, short, original, views, error, created_at, isQROpen, onQRToggle, onDelete}: LinkCardProps) {
+function LinkCard({id, short, original, views, error, created_at, isQROpen, onQRToggle, onDelete, tag}: LinkCardProps) {
     const [copied, setCopied] = useState(false)
     const [copySuccess, setCopySuccess] = useState(false)
     const [showQRImage, setShowQRImage] = useState(false)
     const [showTrashConfirmation, setShowTrashConfirmation] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [tagInputActive, setTagInputActive] = useState(false)
+    const [currentTag, setCurrentTag] = useState(tag ?? "") // реальный тэг
+    const [tagValue, setTagValue] = useState(tag ?? "") // для изменения тэга
+
 
     const code = short?.split("/").pop()
 
@@ -110,7 +115,31 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                 toast.error(data["error"])
             }
         } catch (err) {
-            console.error(err)
+            toast.error("Ошибка соединения с сервером")
+        }
+    }
+
+    const handleTag = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/my-links/add-tag`, {
+                method: "PATCH",
+                credentials: "include",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    id: id, // айди ссылки
+                    tag: tagValue
+                })
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setCurrentTag(tagValue)
+                setTagInputActive(false)
+            } else {
+                toast.error(data["error"])
+            }
+        } catch (err) {
             toast.error("Ошибка соединения с сервером")
         }
     }
@@ -195,19 +224,57 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                 />
             </div>
 
-            <p className="absolute bottom-2 right-3
-            text-sm text-gray-400">{formatDateTime(created_at)}</p>
+            {id !== undefined && (<div className={`absolute top-3 w-5 h-5 right-24`}>
+                <img src="/tag.svg" alt="Создать тэг"
+                     className={`absolute inset-0 w-5 h-5 cursor-pointer
+                        opacity-50 hover:opacity-100 transition-all duration-300`}
+                     onClick={() => { setTagInputActive(!tagInputActive) }}
+                />
+            </div>)}
 
+            {id !== undefined && <p className="absolute bottom-2 right-3
+            text-sm text-gray-400">{formatDateTime(created_at)}</p>}
 
-            <p className="text-blue-600 font-bold">
-                <a href={`http://${short}`}
-                   target="_blank"
-                   className="hover:underline"
-                >
-                    {short}
-                </a>
-            </p>
+            <div className="flex flex-row gap-2">
+                <p className="text-blue-600 font-bold">
+                    <a href={`http://${short}`}
+                       target="_blank"
+                       className="hover:underline"
+                    >
+                        {short}
+                    </a>
+                </p>
 
+                {currentTag && !tagInputActive && (
+                    <>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-600 font-bold">
+                            {currentTag}
+                        </span>
+                    </>
+                )}
+
+                <div className={`flex flex-row gap-2 transition-all duration-300
+                ${tagInputActive ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none"}`}>
+                    <input
+                    className="border-[1.5px] border-gray-400 h-5 mt-0.5 pl-1 rounded-md
+                    focus:outline-none text-gray-600"
+                    placeholder="Введите тэг..."
+                    maxLength={25}
+                    value={tagValue}
+                    onChange={e => setTagValue(e.target.value)}/>
+                    <button className="border-[1.5px] border-gray-400 h-5 w-10 mt-0.5
+                    rounded-md group
+                    hover:bg-gray-200 hover:border-gray-400
+                    active:bg-gray-300 active:border-gray-400 hover:shadow-lg hover:scale-105
+                    active:scale-110 hover:shadow-gray-500/50 transition-all duration-200 cursor-pointer"
+                    onClick={() => { void handleTag() }}>
+                        <img alt="Подтвердить" src="/ok.svg"
+                             className="h-3 w-3 ml-3 group-hover:invert"/>
+                    </button>
+                </div>
+            </div>
 
             <p className="text-gray-400 text-sm">
                 <a href={original}

@@ -50,6 +50,11 @@ type ResetPassword struct {
 	ResetToken      string `json:"reset_token"`
 }
 
+type AddTag struct {
+	LinkID int    `json:"id"`
+	Tag    string `json:"tag"`
+}
+
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	r.POST("/create-link", func(c *gin.Context) {
@@ -135,7 +140,6 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	r.GET("/my-links", func(c *gin.Context) {
 		userID, err := services.GetUserIdFromJWT(c)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Ошибка токена. Попробуйте перезайти в аккаунт",
@@ -143,7 +147,10 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
-		links, err := services.UserLinks(db, userID)
+		sortBy := c.DefaultQuery("sort", "date")
+		orderBy := c.DefaultQuery("order", "desc")
+
+		links, err := services.UserLinks(db, userID, sortBy, orderBy)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Ошибка базы данных",
@@ -154,13 +161,12 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		if len(links) == 0 {
 			c.JSON(http.StatusOK, gin.H{
 				"results": []models.Link{},
-				"message": "Вы еще не зашортили ни одной ссылки",
+				"message": "Ссылок не найдено",
 			})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"results": links})
-
 	})
 
 	r.POST("/api/registration", func(c *gin.Context) {
@@ -713,6 +719,67 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка удаления ссылки",
 			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
+	})
+
+	r.PATCH("/my-links/add-tag", func(c *gin.Context) {
+		var req AddTag
+		err := c.ShouldBindJSON(&req)
+		fmt.Println(err)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		userID, err := services.GetUserIdFromJWT(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Ошибка токена. Попробуйте перезайти в аккаунт",
+			})
+			return
+		}
+
+		couldAdd, err := services.CouldAddTag(db, userID, req.LinkID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if !couldAdd {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "У вас нет прав изменять тэг",
+			})
+			return
+		}
+
+		tag := strings.TrimSpace(req.Tag)
+		if len(tag) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Тэг не может быть пустым",
+			})
+			return
+		}
+
+		if len(tag) > 25 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Максимальная длина 25 символов",
+			})
+			return
+		}
+
+		err = services.AddTag(db, req.LinkID, tag)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			panic(err.Error())
 			return
 		}
 

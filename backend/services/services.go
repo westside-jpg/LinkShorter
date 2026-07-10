@@ -512,10 +512,42 @@ func CouldResendEmail(db *pgxpool.Pool, email string) (bool, time.Duration, erro
 	return true, 0, nil
 }
 
-func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
+func UserLinks(db *pgxpool.Pool, userId int, sortBy string, orderBy string) ([]models.Link, error) {
+	var sortColumn string
+	switch sortBy {
+	case "date":
+		sortColumn = "created_at"
+	case "views":
+		sortColumn = "views"
+	default:
+		return nil, errors.New("Неверная сортировка")
+	}
+
+	var sortOrder string
+	switch orderBy {
+	case "asc":
+		sortOrder = "ASC"
+	case "desc":
+		sortOrder = "DESC"
+	default:
+		return nil, errors.New("Неверный порядок сортировки")
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id,
+		       short_url,
+		       original_url,
+		       views,
+		       tag,
+		       created_at
+		FROM links
+		WHERE user_id = $1
+		ORDER BY %s %s
+	`, sortColumn, sortOrder)
+
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT id, short_url, original_url, views, created_at FROM links WHERE user_id = $1`,
+		query,
 		userId,
 	)
 
@@ -528,7 +560,7 @@ func UserLinks(db *pgxpool.Pool, userId int) ([]models.Link, error) {
 	var links []models.Link
 	for rows.Next() {
 		var link models.Link
-		if err := rows.Scan(&link.LinkID, &link.ShortURL, &link.OriginalURL, &link.Views, &link.CreatedAt); err != nil {
+		if err := rows.Scan(&link.LinkID, &link.ShortURL, &link.OriginalURL, &link.Views, &link.Tag, &link.CreatedAt); err != nil {
 			return nil, err
 		}
 		links = append(links, link)
@@ -847,4 +879,33 @@ func DeleteLink(db *pgxpool.Pool, linkID int, userID int) error {
 	}
 
 	return nil
+}
+
+func AddTag(db *pgxpool.Pool, linkID int, tag string) error {
+	_, err := db.Exec(
+		context.Background(),
+		`UPDATE links SET tag=$1 WHERE id=$2`,
+		tag, linkID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CouldAddTag(db *pgxpool.Pool, userID int, linkID int) (bool, error) {
+	var valid bool
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT EXISTS(
+			SELECT 1 FROM links WHERE id=$1 AND user_id=$2
+			)`,
+		linkID, userID).Scan(&valid)
+
+	if err != nil {
+		return false, err
+	}
+
+	return valid, nil
 }
