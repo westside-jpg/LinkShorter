@@ -105,7 +105,7 @@ function LinksList() {
 
                         <div className={`absolute top-full flex flex-col gap-1 mt-2
                          left-0 w-full bg-white border-2 border-black rounded-lg p-3 z-10
-                         transform transition-all duration-300
+                         transform transition-all duration-300 shadow-xl shadow-gray-400
                         ${isSortOpen ? "opacity-100 translate-y-0 pointer-events-auto"
                             : "opacity-0 -translate-y-2 pointer-events-none"}`}>
                             <p className="text-center">По убыванию</p>
@@ -207,7 +207,7 @@ function LinksList() {
 
                         <div className={`absolute top-full flex flex-col gap-1 mt-2
                          left-0 w-full bg-white border-2 border-black rounded-lg p-3 z-10
-                         transform transition-all duration-300
+                         transform transition-all duration-300 shadow-xl shadow-gray-400
                         ${isFilterOpen ? "opacity-100 translate-y-0 pointer-events-auto"
                             : "opacity-0 -translate-y-2 pointer-events-none"}`}>
                             <p className="text-center">Диапазон</p>
