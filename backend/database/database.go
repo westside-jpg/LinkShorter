@@ -39,6 +39,7 @@ func CreateTables(db *pgxpool.Pool) error {
 			user_id INTEGER DEFAULT 0,
 			views INTEGER DEFAULT 0,
 			tag TEXT DEFAULT '',
+			is_custom BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 

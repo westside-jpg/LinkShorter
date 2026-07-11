@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -97,7 +98,7 @@ func GenerateLink(db *pgxpool.Pool, longLink string, userID int) (string, error)
 	err := db.QueryRow(
 		context.Background(),
 		`SELECT short_url FROM links
-				WHERE original_url = $1 AND user_id = $2`,
+				WHERE original_url = $1 AND user_id = $2 AND is_custom = FALSE`,
 		longLink, userID,
 	).Scan(&existedLink)
 
@@ -690,9 +691,22 @@ func ScheduleDeletingNotVerifiedUsers(db *pgxpool.Pool) ([]string, error) {
 	}
 
 	_, err = db.Exec(context.Background(),
+		`DELETE FROM links
+			WHERE user_id IN (
+			    SELECT id
+				FROM users
+				WHERE is_verified = FALSE
+				AND created_at < NOW() - INTERVAL '3 days'
+			)`)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = db.Exec(context.Background(),
 		`DELETE FROM users
          WHERE is_verified = FALSE
-         AND created_at < NOW() - INTERVAL '3 days'`)
+         AND created_at < NOW() - INTERVAL '3 days'
+         `)
 	if err != nil {
 		return nil, err
 	}
@@ -985,4 +999,73 @@ func CouldAddTag(db *pgxpool.Pool, userID int, linkID int) (bool, error) {
 	}
 
 	return valid, nil
+}
+
+func CreateCustomLink(db *pgxpool.Pool, userID int, originalLink string, custom string) (string, bool, error) {
+	var link = "localhost:8080/" + custom
+	var exist bool
+
+	err := db.QueryRow(
+		context.Background(),
+		`SELECT EXISTS(
+			SELECT 1 FROM links
+			WHERE short_url=$1
+		)`, link).Scan(&exist)
+
+	if err != nil {
+		return "", true, err
+	}
+
+	if exist {
+		return "", true, nil
+	}
+
+	_, err = db.Exec(
+		context.Background(),
+		`INSERT INTO links 
+			(user_id, original_url, short_url, is_custom) VALUES ($1, $2, $3, $4)`,
+		userID, originalLink, link, true)
+
+	if err != nil {
+		return "", true, err
+	}
+
+	return link, false, nil
+}
+
+func ValidateURL(rawURL string) (string, error) {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return "", errors.New("Cначала введите ссылку")
+	}
+	if !strings.HasPrefix(rawURL, "http://") &&
+		!strings.HasPrefix(rawURL, "https://") {
+		rawURL = "https://" + rawURL
+	}
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return "", errors.New("Некорректная ссылка")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", errors.New("Некорректная ссылка")
+	}
+	if !strings.Contains(parsed.Hostname(), ".") {
+		return "", errors.New("Некорректная ссылка")
+	}
+	return rawURL, nil
+}
+
+func ValidateCustomLink(custom string) (string, error) {
+	custom = strings.TrimSpace(custom)
+	if custom == "" {
+		return "", errors.New("Введите название ссылки")
+	}
+	if len([]rune(custom)) > 25 {
+		return "", errors.New("Название ссылки не должно превышать 25 символов")
+	}
+	reg := regexp.MustCompile(`^[\p{L}\p{N}_-]+$`)
+	if !reg.MatchString(custom) {
+		return "", errors.New("Название ссылки может содержать только буквы, цифры, '_' и '-'")
+	}
+	return custom, nil
 }

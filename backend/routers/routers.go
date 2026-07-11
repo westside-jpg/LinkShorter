@@ -25,6 +25,11 @@ type CreateLinkRequest struct {
 	URL string `json:"url"`
 }
 
+type CreateCustomLinkRequest struct {
+	URL    string `json:"url"`
+	Custom string `json:"custom"`
+}
+
 type CreateRegistrationRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -69,10 +74,18 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 			return
 		}
 
+		url, err := services.ValidateURL(req.URL)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
 		// Создание ссылки для незарегистрированного пользователя
 		tokenString, err := c.Cookie("token")
 		if err != nil {
-			shortLink, err := services.GenerateLink(db, req.URL, 0)
+			shortLink, err := services.GenerateLink(db, url, 0)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": "Ошибка базы данных. Не удалось создать ссылку",
@@ -99,7 +112,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		claims := token.Claims.(jwt.MapClaims)
 		userID := int(claims["user_id"].(float64))
 
-		shortLink, err := services.GenerateLink(db, req.URL, userID)
+		shortLink, err := services.GenerateLink(db, url, userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Ошибка базы данных. Не удалось создать ссылку",
@@ -109,6 +122,61 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.JSON(http.StatusOK, gin.H{
 			"short-link": shortLink,
 		})
+	})
+
+	r.POST("/create-link/custom", func(c *gin.Context) {
+		var req CreateCustomLinkRequest
+		err := c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Неправильный запрос",
+			})
+			return
+		}
+
+		url, err := services.ValidateURL(req.URL)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		custom, err := services.ValidateCustomLink(req.Custom)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		userID, err := services.GetUserIdFromJWT(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Ошибка токена. \n Попробуйте перезайти в аккаунт",
+			})
+			return
+		}
+
+		shortLink, exist, err := services.CreateCustomLink(db, userID, url, custom)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Ошибка базы данных. \n Попробуйте позже",
+			})
+			return
+		}
+
+		if exist {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "Эта ссылка уже занята",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"short-link": shortLink,
+		})
+
 	})
 
 	r.GET("/:code", func(c *gin.Context) {
