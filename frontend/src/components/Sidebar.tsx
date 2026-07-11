@@ -237,7 +237,7 @@ function Sidebar({ isOpen }: SidebarProps) {
     const Logout = async () => {
         setIsLoading(true)
         try {
-            const response = await fetch("http://localhost:8080/logout", {
+            const response = await fetch("http://localhost:8080/api/logout", {
                 credentials: "include"
             })
 

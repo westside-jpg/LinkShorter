@@ -63,7 +63,7 @@ type AddTag struct {
 
 func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
-	r.POST("/create-link", func(c *gin.Context) {
+	r.POST("/api/create-link", func(c *gin.Context) {
 		var req CreateLinkRequest
 		err := c.ShouldBindJSON(&req)
 
@@ -124,7 +124,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		})
 	})
 
-	r.POST("/create-link/custom", func(c *gin.Context) {
+	r.POST("/api/create-link/custom", func(c *gin.Context) {
 		var req CreateCustomLinkRequest
 		err := c.ShouldBindJSON(&req)
 		if err != nil {
@@ -179,35 +179,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	})
 
-	r.GET("/:code", func(c *gin.Context) {
-		code := c.Param("code")
-		originalURL, err := services.ReturnOriginalLink(db, code)
-
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				c.JSON(http.StatusNotFound, gin.H{
-					"error": "Ссылки не существует",
-				})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Ошибка сервера",
-			})
-			return
-		}
-
-		err = services.IncreaseLinkViews(db, code)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Ошибка подсчета статистики",
-			})
-			return
-		}
-
-		c.Redirect(http.StatusFound, originalURL)
-	})
-
-	r.GET("/my-links", func(c *gin.Context) {
+	r.GET("/api/my-links", func(c *gin.Context) {
 		userID, err := services.GetUserIdFromJWT(c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -421,7 +393,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		})
 	})
 
-	r.GET("/verify/:code", func(c *gin.Context) {
+	r.GET("/api/verify/:code", func(c *gin.Context) {
 		code := c.Param("code")
 
 		err := services.VerifyEmail(db, code)
@@ -763,7 +735,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.Data(http.StatusOK, "image/png", png)
 	})
 
-	r.GET("/logout", func(c *gin.Context) {
+	r.GET("/api/logout", func(c *gin.Context) {
 		c.SetCookie("token", "", -1, "/", "localhost", false, true)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -771,7 +743,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		})
 	})
 
-	r.DELETE("/delete-link/:id", func(c *gin.Context) {
+	r.DELETE("/api/delete-link/:id", func(c *gin.Context) {
 		linkID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -799,7 +771,7 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		c.JSON(http.StatusOK, gin.H{})
 	})
 
-	r.PATCH("/my-links/add-tag", func(c *gin.Context) {
+	r.PATCH("/api/my-links/add-tag", func(c *gin.Context) {
 		var req AddTag
 		err := c.ShouldBindJSON(&req)
 		fmt.Println(err)
@@ -852,5 +824,26 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{})
+	})
+
+	r.GET("/:code", func(c *gin.Context) {
+		code := c.Param("code")
+		originalURL, err := services.ReturnOriginalLink(db, code)
+
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				c.Redirect(http.StatusFound, "http://localhost:5173/link-not-found")
+				return
+			}
+			c.Redirect(http.StatusInternalServerError, "http://localhost:5173/server-error")
+			return
+		}
+
+		err = services.IncreaseLinkViews(db, code)
+		if err != nil {
+			log.Println("Не удалось увеличить счетчик просмотров:", err)
+		}
+
+		c.Redirect(http.StatusFound, originalURL)
 	})
 }

@@ -6,6 +6,9 @@ import Sidebar from "./components/Sidebar.tsx";
 import {useEffect, useState} from "react";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import { Toaster } from "sonner";
+import NotFound from "./pages/NotFound.tsx";
+import LinkNotFound from "./pages/LinkNotFound.tsx";
+import ServerError from "./pages/ServerError.tsx";
 
 function App() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -41,7 +44,18 @@ function AppContent({ sidebarOpen, setSidebarOpen }: {
 }) {
     const { user } = useAuth()
     const location = useLocation()
-    const hideProfileButton = location.pathname === "/reset-password"
+
+    const hiddenRoutes = [
+        "/reset-password"
+    ]
+    const knownRoutes = [
+        "/",
+        "/my-links",
+        "/reset-password",
+    ]
+
+    const isNotFound = !knownRoutes.includes(location.pathname)
+    const hideProfileButton = hiddenRoutes.includes(location.pathname) || isNotFound
 
     // Закрытие сайдбара при переходе между страницами
     useEffect(() => {
@@ -54,12 +68,16 @@ function AppContent({ sidebarOpen, setSidebarOpen }: {
                 <Route path="/" element={<Home />} />
                 <Route path="/my-links" element={<LinksList />} />
                 <Route path="/reset-password" element={<ResetPassword />}/>
+                <Route path="/link-not-found" element={<LinkNotFound />}/>
+                <Route path="/server-error" element={<ServerError />}/>
+
+                <Route path="*" element={<NotFound />} />
             </Routes>
             {!hideProfileButton && <button className="fixed top-4 right-4" onClick={() => setSidebarOpen(true)}>
                 <img src="/avatar.svg" alt="Профиль (меню)" className="w-15 h-15 rounded-sm cursor-pointer"/>
             </button>}
-            {user?.username && <p className="text-xl fixed top-4 right-22 px-2 border-2 rounded-xl font-extrabold">{user.username}</p>}
-            {user?.email && <p className="text-sm fixed top-13 right-22 px-2 border-2 rounded-xl">{user.email}</p>}
+            {user?.username && !hideProfileButton && <p className="text-xl fixed top-4 right-22 px-2 border-2 rounded-xl font-extrabold">{user.username}</p>}
+            {user?.email && !hideProfileButton && <p className="text-sm fixed top-13 right-22 px-2 border-2 rounded-xl">{user.email}</p>}
             {sidebarOpen && (
                 <div className="fixed inset-0 bg-black/50 z-40 cursor-alias" onClick={() => setSidebarOpen(false)} />
             )}

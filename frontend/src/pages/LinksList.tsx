@@ -53,7 +53,7 @@ function LinksList() {
     const SortLinks = async ()=> {
         setLoading(true)
         try {
-            const response = await fetch(`http://localhost:8080/my-links?search=${query.search}&sort=${query.sort}&order=${query.order}&period=${query.period}&views=${query.views}&tags=${query.tags}`, {
+            const response = await fetch(`http://localhost:8080/api/my-links?search=${query.search}&sort=${query.sort}&order=${query.order}&period=${query.period}&views=${query.views}&tags=${query.tags}`, {
                 method: "GET",
                 credentials: "include"
             })

@@ -108,7 +108,7 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
 
     const handleDelete = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/delete-link/${id}`, {
+            const response = await fetch(`http://localhost:8080/api/delete-link/${id}`, {
                 method: "DELETE",
                 credentials: "include"
             })
@@ -132,7 +132,7 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
 
     const handleTag = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/my-links/add-tag`, {
+            const response = await fetch(`http://localhost:8080/api/my-links/add-tag`, {
                 method: "PATCH",
                 credentials: "include",
                 headers: {"Content-Type": "application/json"},

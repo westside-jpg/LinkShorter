@@ -52,7 +52,7 @@ function Home() {
         setInputURL(url)
 
         try {
-            const response = await fetch("http://localhost:8080/create-link", {
+            const response = await fetch("http://localhost:8080/api/create-link", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: url }),
@@ -113,7 +113,7 @@ function Home() {
 
         try {
 
-            const response = await fetch("http://localhost:8080/create-link/custom", {
+            const response = await fetch("http://localhost:8080/api/create-link/custom", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

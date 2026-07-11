@@ -282,7 +282,7 @@ func SendEmail(db *pgxpool.Pool, email string) error {
 									нажмите на кнопку ниже
 								</p>
 
-                            	<a href="http://localhost:8080/verify/`+verificationCode+`"
+                            	<a href="http://localhost:8080/api/verify/`+verificationCode+`"
                                		style="display:inline-block;background:#2563eb;color:#ffffff;
                                     	  text-decoration:none;padding:14px 32px;
                                     	  border-radius:8px;font-size:16px;font-weight:bold;">
