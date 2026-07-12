@@ -7,14 +7,18 @@ function ServerError() {
             <img
                 src="/server-error.svg"
                 alt="Ссылка не найдена"
-                className="w-56 h-56 opacity-80"
+                className="w-56 h-56 opacity-80
+
+                dark:invert"
             />
 
-            <h1 className="-mt-12.5 text-4xl font-bold">
+            <h1 className="-mt-12.5 text-4xl font-bold
+            dark:text-zinc-100">
                 Ошибка сервера
             </h1>
 
-            <p className="mt-2 mb-7 max-w-xl text-center leading-4 text-gray-500 whitespace-pre-line">
+            <p className="mt-2 mb-7 max-w-xl text-center leading-4 text-gray-500 whitespace-pre-line
+            dark:text-zinc-400">
                 Во время обработки запроса произошла {"\n"}
                 непредвиденная ошибка. Попробуйте {"\n"}
                 обновить страницу немного позже
@@ -26,7 +30,9 @@ function ServerError() {
                      hover:scale-105 hover:bg-blue-600 hover:border-blue-600 hover:text-white
                      active:scale-110 active:bg-blue-500 active:border-blue-500 active:text-white
                      hover:shadow-lg hover:shadow-blue-500/50
-                     transition-all duration-200 cursor-pointer"
+                     transition-all duration-200 cursor-pointer
+
+                     dark:text-gray-400"
             >
                 На главную
             </Link>

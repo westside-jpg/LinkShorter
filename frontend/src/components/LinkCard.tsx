@@ -159,8 +159,9 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
     if (error) {
         return (
             <div className="border-2 rounded-xl px-4 py-3
-                 border-red-500 bg-red-50">
-                <p className="text-red-500">
+                 border-red-500 bg-red-50
+                  dark:bg-red-900 dark:border-red-600">
+                <p className="text-red-500 dark:text-red-100">
                     {error}
                 </p>
             </div>
@@ -170,6 +171,7 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
     return (
         <div className={`relative border-2 rounded-xl px-4 py-3 flex flex-col
          gap-1 border-blue-600 bg-blue-50 transition-all duration-300
+         dark:bg-zinc-900 dark:border-gray-500
          ${isDeleting ? "opacity-0 scale-95 -translate-y-2" : ""}`}>
 
             {id !== undefined && (<div className="absolute top-3 right-3 w-5 h-5">
@@ -190,6 +192,8 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
             {id !== undefined && (<div className={`absolute flex flex-col top-10 -right-28.75 mt-2 items-center justify-center
             bg-white border-2 border-black rounded-xl p-3 z-10
             transition-all duration-200 shadow-lg shadow-gray-400
+            
+            dark:bg-zinc-800 dark:border-zinc-700 dark:shadow-zinc-800
             ${showTrashConfirmation ? "opacity-100 translate-y-0 pointer-events-auto"
                 : "opacity-0 -translate-y-2 pointer-events-none"}`}>
                 <p>Вы точно хотите удалить ссылку?</p>
@@ -198,13 +202,22 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                     hover:scale-105 hover:bg-red-600 hover:border-red-600
                     active:scale-110 active:bg-red-500 active:border-red-500
                     hover:shadow-lg hover:shadow-red-500/50 hover:text-white
-                    transition-all duration-200 cursor-pointer active:text-white"
+                    transition-all duration-200 cursor-pointer active:text-white
+
+
+                    dark:hover:bg-red-400 dark:hover:border-red-400
+                    dark:active:bg-red-300 dark:active:border-red-300
+                    dark:hover:shadow-red-400 dark:text-zinc-200"
                     onClick={() => { void handleDelete() }}>Удалить</button>
                     <button className="flex-1 border-2 rounded-lg px-1 mt-2 w-30
                     hover:scale-105 hover:bg-gray-600 hover:border-gray-600
                     active:scale-110 active:bg-gray-500 active:border-gray-500
                     hover:shadow-lg hover:shadow-gray-500/50 hover:text-white
-                    transition-all duration-200 cursor-pointer active:text-white"
+                    transition-all duration-200 cursor-pointer active:text-white
+
+                    dark:hover:bg-gray-400 dark:hover:border-gray-400
+                    dark:active:bg-gray-300 dark:active:border-gray-300
+                    dark:hover:shadow-gray-400 dark:text-zinc-200"
                     onClick={() => { setShowTrashConfirmation(false) }}>Отмена</button>
                 </div>
             </div>)}
@@ -255,7 +268,7 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
             text-sm text-gray-400">{formatDateTime(created_at)}</p>}
 
             <div className="flex items-center gap-2">
-                <p className="text-blue-600 font-bold">
+                <p className="text-blue-600 font-bold dark:dark:text-blue-400">
                     <a href={`http://${short}`}
                         target="_blank"
                         className="hover:underline">
@@ -270,8 +283,8 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
 
                         {currentTag && (
                             <>
-                                <span className="text-gray-400">|</span>
-                                <span className="text-gray-600 font-bold">
+                                <span className="text-gray-400 dark:text-zinc-500">|</span>
+                                <span className="text-gray-600 font-bold dark:text-zinc-200">
                                     {currentTag}
                                 </span>
                             </>
@@ -282,17 +295,18 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
                         ${tagInputActive ? "opacity-100 translate-y-0" 
                             : "opacity-0 translate-y-2 pointer-events-none"}`}>
                         <input className="border-[1.5px] border-gray-400 h-5 pl-1 rounded-md
-                            focus:outline-none text-gray-600"
+                            focus:outline-none text-gray-600
+                            dark:text-zinc-200 dark:placeholder-zinc-400"
                             placeholder="Введите тэг..."
                             maxLength={25}
                             ref={inputRef}
                             value={tagValue}
                             onChange={e => setTagValue(e.target.value)}/>
 
-                        <button className="border-[1.5px] border-gray-400 h-5 w-10 shrink-0 rounded-md group
-                            hover:bg-gray-200 hover:border-gray-400
-                            active:bg-gray-300 active:border-gray-400
-                            hover:shadow-lg hover:scale-105
+                        <button className="border-[1.5px] border-gray-400 h-5 w-10 shrink-0 rounded-md
+                            hover:bg-gray-300 hover:border-gray-300
+                            active:bg-gray-200 active:border-gray-200
+                            hover:shadow-lg hover:scale-105 group
                             active:scale-110 hover:shadow-gray-500/50
                             transition-all duration-200 cursor-pointer"
                             onClick={() => { void handleTag() }}>
@@ -315,23 +329,31 @@ function LinkCard({id, short, original, views, error, created_at, isQROpen, onQR
             <div className={`absolute flex flex-col top-10 -right-3.75 mt-2 items-center justify-center
             bg-white border-2 border-black rounded-xl p-3 z-10
             transition-all duration-200 shadow-lg shadow-gray-400
+            
+            dark:bg-zinc-800 dark:border-zinc-700 dark:shadow-zinc-800
             ${isQROpen ? "opacity-100 translate-y-0 pointer-events-auto" 
                 : "opacity-0 -translate-y-2 pointer-events-none"}`}>
 
-                {showQRImage && <img alt="QR-код на ссылку" src={`http://localhost:8080/api/qr/${code}`} className="w-40 h-40"/>}
+                {showQRImage && <img alt="QR-код на ссылку" src={`http://localhost:8080/api/qr/${code}`} className="w-40 h-40 dark:invert dark:mix-blend-lighten"/>}
 
-                <div className="whitespace-pre-line text-center items-center text-sm text-gray-400">
+                <div className="whitespace-pre-line text-center items-center text-sm text-gray-400
+                dark:text-zinc-200">
                     {short}
                 </div>
 
-                <div className="border-2 border-black rounded-xl mt-2
+                <div className="border-2 rounded-xl mt-2
                  hover:scale-105 hover:bg-blue-600 hover:border-blue-600
                  active:scale-110 active:bg-blue-500 active:border-blue-500
                  hover:shadow-lg hover:shadow-blue-500/50
-                 transition-all duration-200 cursor-pointer"
+                 transition-all duration-200 cursor-pointer
+
+                 dark:hover:bg-blue-400 dark:hover:border-blue-400
+                 dark:active:bg-blue-300 dark:active:border-blue-300
+                 dark:hover:shadow-blue-400/50
+                 "
                  onClick={handleDownload}>
                     <img src="/download.svg" alt="Скачать"
-                         className="cursor-pointer py-2 px-2 h-9 w-9 hover:invert">
+                         className="cursor-pointer py-2 px-2 h-9 w-9 hover:invert dark:invert">
                     </img>
                 </div>
 

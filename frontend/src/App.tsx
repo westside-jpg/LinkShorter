@@ -13,6 +13,12 @@ import ServerError from "./pages/ServerError.tsx";
 function App() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
+    useEffect(() => {
+        if (localStorage.getItem("theme") === "dark") {
+            document.documentElement.classList.add("dark")
+        }
+    }, [])
+
     return (
         <AuthProvider>
             <BrowserRouter>
@@ -25,9 +31,9 @@ function App() {
                         classNames: {
                             toast: "flex items-center border-2 rounded-xl text-center px-10 py-3 font-bold shadow-lg shadow-gray-300",
                             title: "text-base",
-                            success: "bg-green-500 border-green-500 text-white shadow-green-300",
-                            error: "bg-red-500 border-red-500 text-white shadow-red-300",
-                            info: "bg-blue-500 border-blue-500 text-white shadow-blue-300",
+                            success: "bg-green-500 border-green-500 text-white shadow-green-300 dark:shadow-none",
+                            error: "bg-red-500 border-red-500 text-white shadow-red-300 dark:shadow-none",
+                            info: "bg-blue-500 border-blue-500 text-white shadow-blue-300 dark:shadow-none",
                             icon: "hidden",
                         }
                     }}

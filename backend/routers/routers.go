@@ -369,14 +369,18 @@ func SetupRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	// Получение JWT-токена из Cookies для React'а
 	r.GET("/api/me", func(c *gin.Context) {
 		userID, err := services.GetUserIdFromJWT(c)
+		fmt.Println("JWT:", userID, err)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"errors": []string{"Ошибка токена. Попробуйте перезайти в аккаунт"},
 			})
+			return
 		}
 
 		username, email, isVerified, createdAt, err := services.DataAboutUserFromJWT(db, userID)
+		fmt.Println("DB:", err)
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"errors": []string{"Ошибка базы данных. Попробуйте позже"},

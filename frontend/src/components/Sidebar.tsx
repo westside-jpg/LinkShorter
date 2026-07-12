@@ -17,9 +17,15 @@ function Sidebar({ isOpen }: SidebarProps) {
     active:bg-blue-500 active:border-blue-500 active:text-white
     hover:shadow-lg hover:shadow-blue-500/50
     transition-all duration-200 cursor-pointer
+    
+    dark:hover:bg-blue-400 dark:hover:border-blue-400
+    dark:active:bg-blue-300 dark:active:border-blue-300
+    dark:hover:shadow-blue-400/50
     ${location.pathname === path
-        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default"
-        : "bg-white border-black text-black"
+        ? `bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default
+           dark:bg-blue-400 dark:border-blue-400 dark:text-white dark:shadow-lg dark:shadow-blue-400/50`
+        : `border-black text-black
+           dark:border-zinc-600 dark:text-zinc-200`
     }`
 
     // Для показа нужных элементов
@@ -38,6 +44,25 @@ function Sidebar({ isOpen }: SidebarProps) {
     const [message, setMessage] = useState("")
     const [messageType, setMessageType] = useState("")
     const [timeWait, setTimeWait] = useState(0)
+    const [isDark, setIsDark] = useState(document.documentElement.classList.contains("dark"))
+
+    useEffect(() => {
+        setIsDark(document.documentElement.classList.contains("dark"))
+    }, [])
+
+    const toggleTheme = () => {
+        const html = document.documentElement
+
+        if (isDark) {
+            html.classList.remove("dark")
+            localStorage.setItem("theme", "light")
+        } else {
+            html.classList.add("dark")
+            localStorage.setItem("theme", "dark")
+        }
+
+        setIsDark(!isDark)
+    }
 
     const formatDate = (date: Date) => {
         const day = String(date.getDate()).padStart(2, "0")
@@ -99,26 +124,68 @@ function Sidebar({ isOpen }: SidebarProps) {
     transition-[background-color,border-color,color,box-shadow] duration-200
     ${errors.length > 0 ? "mt-0" : "mt-5"}
     ${isLoading
-        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
-        : "hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
+        ? `bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed
+           dark:bg-zinc-600 dark:border-zinc-600 dark:text-zinc-200
+           dark:hover:bg-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-200`
+        : `hover:bg-blue-600 hover:border-blue-600
+           hover:text-white active:bg-blue-500
+           active:border-blue-500 active:text-white
+           hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer
+           
+           dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-200
+           dark:hover:bg-blue-400 dark:hover:border-blue-400
+           dark:active:bg-blue-300 dark:active:border-blue-300
+           dark:hover:shadow-lg dark:hover:shadow-blue-400/50`
     }`
 
     const loginTabClass = `flex-1 border-2 rounded-xl px-4 py-1.5 text-center
     transition-[background-color,border-color,color,box-shadow] duration-200
     ${isLoading
-        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
+        ? `bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed
+           dark:bg-zinc-600 dark:border-zinc-600 dark:text-zinc-200
+           dark:hover:bg-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-200`
         : isLogin
-            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default"
-            : "bg-white border-black text-black shadow-none cursor-pointer hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50"
+            ? `bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default
+                
+               dark:bg-blue-400 dark:border-blue-400
+               dark:hover:bg-blue-400 dark:hover:border-blue-400
+               dark:active:bg-blue-300 dark:active:border-blue-300
+               dark:hover:shadow-lg dark:hover:shadow-blue-400/50`
+            
+            : `bg-white border-black text-black shadow-none
+               cursor-pointer hover:bg-blue-600 hover:border-blue-600
+               hover:text-white active:bg-blue-500 active:border-blue-500
+               active:text-white hover:shadow-lg hover:shadow-blue-500/50
+               
+               dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-200
+               dark:hover:bg-blue-400 dark:hover:border-blue-400
+               dark:active:bg-blue-300 dark:active:border-blue-300
+               dark:hover:shadow-lg dark:hover:shadow-blue-400/50`
     }`
 
     const registrationTabClass = `flex-1 border-2 rounded-xl px-4 py-1.5 text-center
     transition-[background-color,border-color,color,box-shadow] duration-200
     ${isLoading
-        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
+        ? `bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed
+           dark:bg-zinc-600 dark:border-zinc-600 dark:text-zinc-200
+           dark:hover:bg-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-200`
         : isRegistration
-            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default"
-            : "bg-white border-black text-black shadow-none cursor-pointer hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50"
+            ? `bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50 cursor-default
+            
+               dark:bg-blue-400 dark:border-blue-400
+               dark:hover:bg-blue-400 dark:hover:border-blue-400
+               dark:active:bg-blue-300 dark:active:border-blue-300
+               dark:hover:shadow-lg dark:hover:shadow-blue-400/50`
+            
+            : `bg-white border-black text-black shadow-none cursor-pointer
+               hover:bg-blue-600 hover:border-blue-600 hover:text-white
+               active:bg-blue-500 active:border-blue-500 active:text-white
+               hover:shadow-lg hover:shadow-blue-500/50
+               
+               dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-200
+               dark:hover:bg-blue-400 dark:hover:border-blue-400
+               dark:active:bg-blue-300 dark:active:border-blue-300
+               dark:hover:shadow-lg dark:hover:shadow-blue-400/50`
     }`
 
     // const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -210,7 +277,8 @@ function Sidebar({ isOpen }: SidebarProps) {
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     email: user.email
-                })
+                }),
+                credentials: "include"
             })
 
             const data = await request.json()
@@ -257,27 +325,46 @@ function Sidebar({ isOpen }: SidebarProps) {
     }
 
     return (
-        <div className={`fixed flex flex-col top-0 right-0 h-full w-90 bg-white shadow-xl shadow-white rounded-tl-4xl rounded-bl-4xl z-50
-            transform transition-transform duration-300
+        <div className={`fixed flex flex-col top-0 right-0 h-full w-90  bg-white rounded-tl-4xl rounded-bl-4xl z-50
+            transform transition-transform duration-300 dark:bg-zinc-800
+            
             ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
 
-            <div className="flex flex-col gap-2 pt-10 px-6 m-0 py-0">
-                <p className="text-4xl flex-auto self-center font-bold mb-2">
-                    <span className="text-blue-600">Link</span>
+            <div className="flex flex-row gap-2 justify-center pt-10 px-6 m-0 py-0">
+                <p className="text-4xl self-center font-bold mb-2">
+                    <span className="text-blue-600 dark:text-blue-400">Link</span>
                     <span>Shorter</span>
                 </p>
+                <div className="w-10 h-10 border-2 border-black rounded-lg
+                hover:scale-105 hover:bg-blue-600 hover:border-blue-600 hover:text-white
+                active:scale-110 active:bg-blue-500 active:border-blue-500 active:text-white
+                hover:shadow-lg hover:shadow-blue-500/50
+                transition-all duration-200 cursor-pointer group
+
+                dark:hover:bg-blue-400 dark:hover:border-blue-400
+                dark:active:bg-blue-300 dark:active:border-blue-300
+                dark:bg-zinc-700 dark:border-zinc-600"
+                onClick={toggleTheme}>
+                    {isDark ? (<img alt="Темная тема" src="/dark.svg"
+                        className="group-hover:invert dark:invert"/>) :
+                        (<img alt="Светлая тема" src="/light.svg"
+                              className="group-hover:invert dark:invert"/>)}
+                </div>
             </div>
 
             {isMenu && verify && (<div className="flex justify-center text-center py-4 px-6 whitespace-pre-line">
-                <div className="bg-orange-100 border-2 border-orange-600 text-orange-700 rounded-xl px-6 py-2">
+                <div className="bg-orange-100 border-2 border-orange-600 text-orange-700 rounded-xl px-6 py-2
+                dark:text-orange-100 dark:border-orange-600 dark:bg-orange-800">
                     {verify}
                 </div>
             </div>)}
 
-            {isMenu && message && (<div className="flex-1 justify-center text-center pb-4 px-6 whitespace-pre-line">
+            {isMenu && message && (<div className="justify-center text-center pb-4 px-6 whitespace-pre-line">
                 <div className={`rounded-xl px-6 py-2 whitespace-pre-line
-                ${messageType == "success" ? "bg-green-100 border-2 border-green-600 text-green-700"
-                : "bg-red-100 border-2 border-red-600 text-red-700"}`}>
+                ${messageType == "success" ? `bg-green-100 border-2 border-green-600 text-green-700
+                 dark:bg-green-900 dark:border-green-600 dark:text-green-100`
+                : `bg-red-100 border-2 border-red-600 text-red-700
+                 dark:bg-red-900 dark:border-red-600 dark:text-red-100`}`}>
                     {message}
                     {messageType == "error" && timeWait > 0 && (
                         <p className="text-xl">{formatTimeWait(timeWait)}</p>
@@ -290,9 +377,17 @@ function Sidebar({ isOpen }: SidebarProps) {
                     <button className={`flex-1 border-2 rounded-xl text-center px-4 py-1.5
                     transition-[background-color,border-color,color,box-shadow] duration-200
                     ${(isLoading || timeWait)
-                        ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed pointer-events-none"
-                        : "hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
-                    }`}
+                        ? `bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed
+                           dark:bg-zinc-600 dark:border-zinc-600 dark:text-zinc-200
+                           dark:hover:bg-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-200`
+                        : `hover:bg-blue-600 hover:border-blue-600 hover:text-white active:bg-blue-500
+                           active:border-blue-500 active:text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer
+                           
+                           dark:border-zinc-600 dark:text-zinc-200
+                           dark:hover:bg-blue-400 dark:hover:border-blue-400
+                           dark:active:bg-blue-300 dark:active:border-blue-300
+                            dark:hover:shadow-blue-400/50`
+                    }`} disabled={isLoading || timeWait > 0}
                     onClick={() => { void resendEmail() }}>
                         {isLoading ? "Подождите..." : "Отправить письмо еще раз"}
                     </button>
@@ -336,7 +431,8 @@ function Sidebar({ isOpen }: SidebarProps) {
                         <span className="ml-2">Придумайте логин</span>
                         <input
                             type="text"
-                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none"
+                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none
+                            dark:placeholder-zinc-200"
                             value={username}
                             placeholder="Максимум 30 символов"
                             maxLength={30}
@@ -347,7 +443,8 @@ function Sidebar({ isOpen }: SidebarProps) {
                         <span className="ml-2">Введите почту</span>
                         <input
                             type="email"
-                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none"
+                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none
+                            dark:placeholder-zinc-200"
                             value={email}
                             placeholder="example@gmail.com"
                             onChange={e => setEmail(e.target.value)}
@@ -357,14 +454,15 @@ function Sidebar({ isOpen }: SidebarProps) {
                         <span className="ml-2">Придумайте пароль</span>
                         <input
                             type="password"
-                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none"
+                            className="border-2 rounded-xl px-4 py-1 w-full focus:outline-none
+                            dark:placeholder-zinc-200"
                             value={password}
                             placeholder="Минимум 8 символов"
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
                     {errors.length > 0 && errors.map((e, i) => (
-                        <p key={i} className="text-red-500 text-sm text-center">{e}</p>
+                        <p key={i} className="text-red-500 text-sm text-center dark:text-red-300">{e}</p>
                     ))}
                     <button className={buttonClass} disabled={isLoading} onClick={() => { void handleRegistration() }}>
                         {isLoading ? "Подождите..." : "Зарегистрироваться"}
@@ -392,17 +490,12 @@ function Sidebar({ isOpen }: SidebarProps) {
                             onChange={e => setPassword(e.target.value)}
                         />
                     </div>
-                    <Link to="/reset-password" className="ml-2 cursor-pointer underline text-blue-600">Я забыл пароль</Link>
+                    <Link to="/reset-password" className="ml-2 cursor-pointer underline text-blue-600
+                     dark:text-blue-400">Я забыл пароль</Link>
                     {errors.length > 0 && errors.map((e, i) => (
-                        <p key={i} className="text-red-500 text-sm text-center">{e}</p>
+                        <p key={i} className="text-red-500 text-sm text-center dark:text-red-300">{e}</p>
                     ))}
-                    <button className={`flex-1 border-2 rounded-xl text-center px-4 py-1.5
-                transition-[background-color,border-color,color,box-shadow] duration-200
-                ${isLoading ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed"
-                        : "hover:bg-blue-600 hover:border-blue-600 hover:text-white" +
-                        " active:bg-blue-500 active:border-blue-500 active:text-white" +
-                        " hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"}
-                            ${errors.length > 0 ? "mt-0" : "mt-5" }`}
+                    <button className={buttonClass}
                             onClick={() => { void handleLogin() }}
                             >
                         {isLoading ? "Подождите..." : "Войти"}
@@ -425,21 +518,29 @@ function Sidebar({ isOpen }: SidebarProps) {
                 <div className="mt-auto px-6 pb-6">
                     <button className={`relative w-full border-2 rounded-xl px-4 py-1.5 
                     text-center overflow-hidden group transition-all duration-200 cursor-pointer
-                    ${isLoading ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed pointer-events-none"
-                        : "hover:bg-red-600 hover:border-red-600 hover:text-white " +
-                          "active:bg-red-500 active:border-red-500 active:text-white" +
-                          " hover:shadow-lg hover:shadow-red-500/50"}`}
+                    ${isLoading ? `bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed!
+                           dark:bg-zinc-600 dark:border-zinc-600 dark:text-zinc-200
+                           dark:hover:bg-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-200`
+                        : `hover:bg-red-600 hover:border-red-600 hover:text-white
+                           active:bg-red-500 active:border-red-500 active:text-white
+                           hover:shadow-lg hover:shadow-red-500/50
+                           
+                           dark:border-zinc-600 dark:text-zinc-200
+                           dark:hover:bg-red-400 dark:hover:border-red-400
+                           dark:active:bg-red-300 dark:active:border-red-300`}`} disabled={isLoading}
                     onClick={() => { void Logout() }}>
 
-                        <span className="transition-all duration-200 group-hover:opacity-0">
+                        <span className={`transition-all duration-200 group-hover:opacity-0
+                        ${isLoading ? "group-hover:opacity-100" : ""}`}>
                              {isLoading ? "Подождите..." : "Выйти из аккаунта"}
                         </span>
 
                         <img
                             src="/logout.svg"
                             alt="Выйти из аккаунта"
-                            className="absolute inset-0 m-auto w-5 h-5 opacity-0
-                            group-hover:opacity-100 transition-all duration-200"
+                            className={`absolute inset-0 m-auto w-5 h-5 opacity-0
+                            group-hover:opacity-100 transition-all duration-200
+                            ${isLoading ? "group-hover:opacity-0!" : ""}`}
                         />
 
                     </button>

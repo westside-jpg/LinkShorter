@@ -23,7 +23,10 @@ function ResetPassword() {
 
     const disabledButtonAttributes = `disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500
     disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:border-gray-300
-    disabled:hover:text-gray-500 disabled:hover:shadow-none`
+    disabled:hover:text-gray-500 disabled:hover:shadow-none
+    
+    dark:disabled:bg-zinc-800 dark:disabled:border-zinc-800 dark:disabled:text-zinc-200
+    dark:disabled:hover:bg-zinc-700 dark:disabled:hover:border-zinc-700 dark:disabled:hover:text-zinc-200`
 
     // Тиканье таймера
     useEffect(() => {
@@ -68,6 +71,7 @@ function ResetPassword() {
                     if (isReachStep3)
                         goToStep(3)
                     else
+                        if (attemptsLeft == 0) return
                         void CheckResetPasswordCode()
                 } else if (step == 3) {
                     void ChangePassword()
@@ -349,7 +353,11 @@ function ResetPassword() {
                 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:scale-105
                 active:bg-blue-500 active:border-blue-500 active:text-white
                 hover:shadow-lg hover:shadow-blue-500/50
-                transition-all duration-200 cursor-pointer group"
+                transition-all duration-200 cursor-pointer group
+
+                dark:hover:bg-blue-400 dark:hover:border-blue-400
+                dark:active:bg-blue-300 dark:active:border-blue-300
+                dark:bg-zinc-950 dark:border-zinc-600"
                 onClick={() => {
                     if (isLoading) return
                     if (step == 2) setLastEmail(email)
@@ -360,7 +368,7 @@ function ResetPassword() {
                 <img
                     src="/arrow.svg"
                     alt="Назад"
-                    className="w-5 h-5 rotate-180 invert group-hover:filter-none transition-all duration-200"
+                    className="w-5 h-5 rotate-180 invert group-hover:filter-none dark:filter-none transition-all duration-200"
                 />
                 <span key={step}
                       className="text-base animate-fade-in translate-y-px">{step == 1 ? "На главную" : "Назад"}</span>
@@ -373,7 +381,9 @@ function ResetPassword() {
                         type="email"
                         placeholder="example@gmail.com"
                         value={email}
-                        className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200"
+                        className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200
+                        dark:placeholder-zinc-400 dark:focus:border-gray-300
+                        dark:border-gray-400 dark:text-zinc-200"
                         onChange={e => setEmail((e.target.value).trim())}
                     />
                     <button
@@ -382,6 +392,11 @@ function ResetPassword() {
                             active:bg-blue-500 active:border-blue-500 active:text-white
                             hover:shadow-lg hover:shadow-blue-500/50
                             transition-all duration-200 cursor-pointer group
+                            
+                            dark:border-zinc-600 dark:text-zinc-200
+                            dark:hover:bg-blue-400 dark:hover:border-blue-400
+                            dark:active:bg-blue-300 dark:active:border-blue-300
+                            dark:hover:shadow-lg dark:hover:shadow-blue-400/50
                             ${disabledButtonAttributes}`}
 
                         disabled={isLoading}
@@ -445,8 +460,8 @@ function ResetPassword() {
                                     ${isReachStep3
                                         ? "bg-gray-100 text-gray-500"
                                         : i === code.length
-                                            ? "border-black scale-105"
-                                            : "border-gray-300"}
+                                            ? "border-black scale-105 dark:border-gray-300"
+                                            : "border-gray-300 dark:border-gray-500"}
                                 `}
                             >
                                 {code[i] || ""}
@@ -460,6 +475,11 @@ function ResetPassword() {
                         active:bg-green-500 active:border-green-500 active:text-white
                         hover:shadow-lg hover:shadow-green-500/50
                         transition-all duration-200 cursor-pointer group
+                        
+                        dark:border-zinc-600 dark:text-zinc-200
+                        dark:hover:bg-green-400 dark:hover:border-green-400
+                        dark:active:bg-green-300 dark:active:border-green-300
+                        dark:hover:shadow-lg dark:hover:shadow-green-400/50
                         ${disabledButtonAttributes}`}
                         disabled={isLoading || attemptsLeft == 0}
                         onClick={() => {
@@ -487,6 +507,11 @@ function ResetPassword() {
                         active:bg-blue-500 active:border-blue-500 active:text-white
                         hover:shadow-lg hover:shadow-blue-500/50
                         transition-all duration-200 cursor-pointer group
+                        
+                        dark:border-zinc-600 dark:text-zinc-200
+                        dark:hover:bg-blue-400 dark:hover:border-blue-400
+                        dark:active:bg-blue-300 dark:active:border-blue-300
+                        dark:hover:shadow-lg dark:hover:shadow-blue-400/50
                         ${disabledButtonAttributes}`}
                         disabled={isLoading || !couldResend || isReachStep3}
                         onClick={() => {
@@ -504,8 +529,8 @@ function ResetPassword() {
                 transition-all duration-200`}
                         />
                     </button>
-                <div className="border-2 rounded-2xl border-gray-300 bg-gray-100">
-                    <p className="text-sm py-3 text-center text-gray-400 whitespace-pre-line">
+                <div className="border-2 rounded-2xl border-gray-300 bg-gray-100 dark:bg-zinc-800 dark:border-zinc-700">
+                    <p className="text-sm py-3 text-center text-gray-400 whitespace-pre-line dark:text-zinc-200">
                         {timeWait > 0 ? (
                             <>
                                 Если по каким-то причинам письмо не дошло{"\n"}
@@ -522,8 +547,8 @@ function ResetPassword() {
                     </p>
                 </div>
 
-                <div className="border-2 rounded-2xl border-gray-300 bg-gray-100">
-                    <p className="text-sm py-3 text-center text-gray-400 whitespace-pre-line">
+                <div className="border-2 rounded-2xl border-gray-300 bg-gray-100 dark:bg-zinc-800 dark:border-zinc-700">
+                    <p className="text-sm py-3 text-center text-gray-400 whitespace-pre-line dark:text-zinc-200">
                         Если Вы ввели неправильный адрес электронной почты,{"\n"}
                         то вернитесь на прошлую страницу и введите почту снова
                     </p>
@@ -534,7 +559,7 @@ function ResetPassword() {
 
             {step == 3 && (
                 <div className={`flex flex-col gap-4 w-96 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
-                    <p className="text-xl text-center">
+                    <p className="text-xl text-center dark:text-zinc-200">
                         Теперь дело за малым. Придумайте новый пароль
                         и пообещайте, что не забудете его
                     </p>
@@ -545,7 +570,9 @@ function ResetPassword() {
                             type="password"
                             placeholder="Введите пароль"
                             maxLength={72}
-                            className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200"
+                            className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200
+                            dark:placeholder-zinc-400 dark:focus:border-gray-300
+                            dark:border-gray-400 dark:text-zinc-200"
                             onChange={e => setNewPassword(e.target.value)}
                         />
                     </div>
@@ -556,7 +583,9 @@ function ResetPassword() {
                             type="password"
                             placeholder="Повторите пароль"
                             maxLength={72}
-                            className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200"
+                            className="border-2 rounded-xl px-4 py-2 focus:outline-none focus:border-black transition-all duration-200
+                            dark:placeholder-zinc-400 dark:focus:border-gray-300
+                            dark:border-gray-400 dark:text-zinc-200"
                             onChange={e => setConfirmPassword(e.target.value)}
                         />
                     </div>
@@ -567,6 +596,11 @@ function ResetPassword() {
                 active:bg-green-500 active:border-green-500 active:text-white
                 hover:shadow-lg hover:shadow-green-500/50
                 transition-all duration-200 cursor-pointer group
+                
+                dark:border-zinc-600 dark:text-zinc-200
+                dark:hover:bg-green-400 dark:hover:border-green-400
+                dark:active:bg-green-300 dark:active:border-green-300
+                dark:hover:shadow-lg dark:hover:shadow-green-400/50
                 ${disabledButtonAttributes}`}
                         disabled={isLoading}
                         onClick={() => { void ChangePassword() }}
@@ -584,8 +618,8 @@ function ResetPassword() {
                         />
                     </button>
 
-                    <div className="border-2 rounded-2xl border-gray-300 bg-gray-100">
-                        <p className="text-sm py-3 px-3 text-center text-gray-400 whitespace-pre-line">
+                    <div className="border-2 rounded-2xl border-gray-300 bg-gray-100 dark:bg-zinc-800 dark:border-zinc-700">
+                        <p className="text-sm py-3 px-3 text-center text-gray-400 whitespace-pre-line dark:text-zinc-200">
                             Пароль должен содержать от 8 до 72 символов,
                             включать хотя бы одну заглавную букву, одну строчную букву и одну цифру.
                             Допускаются латинские буквы, цифры и специальные символы
@@ -607,7 +641,12 @@ function ResetPassword() {
                         hover:bg-blue-600 hover:border-blue-600 hover:text-white
                         active:bg-blue-500 active:border-blue-500 active:text-white
                         hover:shadow-lg hover:shadow-blue-500/50
-                        transition-all duration-200 cursor-pointer"
+                        transition-all duration-200 cursor-pointer
+
+                        dark:border-zinc-600 dark:text-zinc-200
+                        dark:hover:bg-blue-400 dark:hover:border-blue-400
+                        dark:active:bg-blue-300 dark:active:border-blue-300
+                        dark:hover:shadow-lg dark:hover:shadow-blue-400/50"
                     >
                         Вернуться на главную
                     </Link>

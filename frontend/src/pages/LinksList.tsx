@@ -26,9 +26,16 @@ function LinksList() {
 
     const buttonHoverActiveStyle = `hover:bg-blue-600 hover:border-blue-600 hover:text-white
         active:bg-blue-500 active:border-blue-500 active:text-white hover:shadow-lg hover:scale-105
-        active:scale-110 hover:shadow-blue-500/50 transition-all duration-200 cursor-pointer`
+        active:scale-110 hover:shadow-blue-500/50 transition-all duration-200 cursor-pointer
+        
+        dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-200
+        dark:hover:bg-blue-400 dark:hover:border-blue-400 dark:hover:shadow-blue-400/50
+        dark:active:bg-blue-300 dark:active:border-blue-300 
+        `
     const selectedButtonStyle = `bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50
-    pointer-events-none`
+    pointer-events-none
+    
+    dark:!bg-blue-400 dark:!border-blue-400 dark:!text-zinc-200`
 
     // Для мгновенного изменения категорий
     // при изменении фильтров/сортировки
@@ -82,13 +89,14 @@ function LinksList() {
         <div className="flex flex-col items-center min-h-screen gap-6 pt-20">
 
             <p className="text-4xl font-bold text-black">
-                <span className="text-blue-600">Мои </span>
-                <span className="text-black">ссылки</span>
+                <span className="text-blue-600 dark:text-blue-400">Мои </span>
+                <span className="text-black dark:text-zinc-200">ссылки</span>
             </p>
 
             <div className="flex w-150 h-8 gap-2">
                 <input
-                    className="flex-1 border-2 border-black rounded-lg pl-2 focus:outline-none"
+                    className="flex-1 border-2 border-black rounded-lg pl-2 focus:outline-none
+                    dark:placeholder-zinc-400 dark:border-gray-400 dark:text-zinc-200"
                     placeholder="Введите название тэга..."
                     value={searchInput}
                     onChange={e => { setSearchInput(e.target.value) }}
@@ -99,13 +107,15 @@ function LinksList() {
                         <div className={`flex items-center justify-center z-20 gap-2 h-8 border-2 border-black rounded-lg
                         ${buttonHoverActiveStyle} group`}
                              onClick={() => { setIsSortOpen(!isSortOpen) }}>
-                            <img src="/sort.svg" alt="Сортировка" className="h-5 w-5 group-hover:invert" />
+                            <img src="/sort.svg" alt="Сортировка" className="h-5 w-5 group-hover:invert dark:invert" />
                             <p>Сортировка</p>
                         </div>
 
                         <div className={`absolute top-full flex flex-col gap-1 mt-2
                          left-0 w-full bg-white border-2 border-black rounded-lg p-3 z-10
                          transform transition-all duration-300 shadow-xl shadow-gray-400
+                         
+                         dark:bg-zinc-800 dark:border-zinc-700 dark:shadow-zinc-800
                         ${isSortOpen ? "opacity-100 translate-y-0 pointer-events-auto"
                             : "opacity-0 -translate-y-2 pointer-events-none"}`}>
                             <p className="text-center">По убыванию</p>
@@ -201,13 +211,15 @@ function LinksList() {
                         <div className={`flex items-center justify-center z-20 gap-2 h-8 border-2 border-black rounded-lg
                         ${buttonHoverActiveStyle} group`}
                              onClick={() => { setIsFilterOpen(!isFilterOpen) }}>
-                            <img src="/filter.svg" alt="Фильтрация" className="h-4 w-4 group-hover:invert" />
+                            <img src="/filter.svg" alt="Фильтрация" className="h-4 w-4 group-hover:invert dark:invert" />
                             <p>Фильтрация</p>
                         </div>
 
                         <div className={`absolute top-full flex flex-col gap-1 mt-2
                          left-0 w-full bg-white border-2 border-black rounded-lg p-3 z-10
                          transform transition-all duration-300 shadow-xl shadow-gray-400
+                         
+                         dark:bg-zinc-800 dark:border-zinc-700 dark:shadow-zinc-800
                         ${isFilterOpen ? "opacity-100 translate-y-0 pointer-events-auto"
                             : "opacity-0 -translate-y-2 pointer-events-none"}`}>
                             <p className="text-center">Диапазон</p>
@@ -394,8 +406,9 @@ function LinksList() {
 
                 {message && !loading &&
                     <div className="border-2 border-red-600 bg-red-50
-                     rounded-xl px-4 py-3 flex flex-col gap-1 text-center">
-                            <p className="text-red-600">
+                     rounded-xl px-4 py-3 flex flex-col gap-1 text-center
+                     dark:bg-red-900 dark:border-red-600">
+                            <p className="text-red-600 dark:text-red-100">
                                 {message}
                             </p>
                     </div>
