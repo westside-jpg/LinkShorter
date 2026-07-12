@@ -7,6 +7,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+/*
+Файл database.go отвечает за подключение к PostgreSQL
+и инициализацию схемы. Устанавливает пул соединений
+через pgxpool и создаёт таблицы links и users, если
+их ещё нет в базе
+*/
+
+/*
+Connect устанавливает пул соединений с PostgreSQL
+по строке подключения и проверяет его через Ping.
+При ошибке подключения завершает программу через log.Fatal,
+так как без БД приложение не может работать
+*/
 func Connect(databaseURL string) *pgxpool.Pool {
 
 	db, err := pgxpool.New(
@@ -27,6 +40,11 @@ func Connect(databaseURL string) *pgxpool.Pool {
 	return db
 }
 
+/*
+CreateTables создаёт таблицы links и users, если они ещё
+не существуют. Безопасно вызывать при каждом запуске сервера,
+существующие таблицы не затрагиваются (CREATE TABLE IF NOT EXISTS)
+*/
 func CreateTables(db *pgxpool.Pool) error {
 
 	_, err := db.Exec(
