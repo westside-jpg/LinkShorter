@@ -1,24 +1,444 @@
-# 🔗 LinkShorter
+<div align="center">
 
-Сервис для сокращения длинных ссылок
+<img src="docs/logo.svg" width="40%">
 
-<img width="1280" height="832" alt="LinkShorter" src="https://github.com/user-attachments/assets/9feb8abb-ee92-49ea-9f11-0e8a0eeb32ae" /><br>
-<img width="1280" height="832" alt="LinkShorter-1" src="https://github.com/user-attachments/assets/843c6d12-bfed-45c3-98ee-d8819d551fde" />
+Сервис сокращения ссылок с аккаунтами, тегами, статистикой просмотров и QR-кодами
 
-## Стек
+![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 
-**Backend**<br><br>
-![Go](https://img.shields.io/badge/-Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
-![Gin](https://img.shields.io/badge/-Gin-00ADD8?style=for-the-badge&logo=gin&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![pgx](https://img.shields.io/badge/-pgx-336791?style=for-the-badge&logoColor=white)
+</div>
 
-**Frontend**<br><br>
-![React](https://img.shields.io/badge/-React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/-Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/-Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+---
 
-## Запуск локально
+Пет-проект на Go, сделанный после практики на Python и FastAPI. Задача была не повторить очередной туториал, а собрать сервис, который по составу функций и вниманию к деталям близок к настоящему продукту
 
-> 🚧 Туториал для локального запуска на своей машине будет чуть позже, ближе к закрытию всех функциональных потребностей
+## Скриншоты
+
+### Главная страница
+
+<div align="center">
+
+<img src="docs/main-light.png" width="45%">
+<img src="docs/main-dark.png" width="45%">
+
+</div>
+
+---
+
+### Мои ссылки
+
+<div align="center">
+
+<img src="docs/my-links-light.png" width="45%">
+<img src="docs/my-links-dark.png" width="45%">
+
+</div>
+
+---
+
+### QR-коды
+
+<div align="center">
+
+<img src="docs/qr-light.png" width="45%">
+<img src="docs/qr-dark.png" width="45%">
+
+</div>
+
+---
+
+### Сброс пароля
+
+<div align="center">
+
+<img src="docs/reset-password-light.png" width="45%">
+<img src="docs/reset-password-dark.png" width="45%">
+
+</div>
+
+---
+
+### Боковая панель
+
+<div align="center">
+
+<img src="docs/sidebar-light.png" width="45%">
+<img src="docs/sidebar-dark.png" width="45%">
+
+</div>
+
+---
+
+### Сортировка и фильтрация
+
+<div align="center">
+
+<img src="docs/sorting-and-filtering-light.png" width="45%">
+<img src="docs/sorting-and-filtering-dark.png" width="45%">
+
+</div>
+
+---
+
+### Страницы ошибок
+
+<div align="center">
+
+<img src="docs/server-error.png" width="45%">
+<img src="docs/404.png" width="45%">
+
+<img src="docs/link-not-found.png" width="90%">
+
+</div>
+
+---
+
+### Конфетти!!!
+
+<div align="center">
+
+<img src="docs/confetti.png" width="90%">
+
+</div>
+
+## Оглавление
+
+- [Возможности](#возможности)
+- [Стек технологий](#стек-технологий)
+- [Быстрый старт через Docker](#быстрый-старт-через-docker)
+- [Просмотр базы данных](#просмотр-базы-данных)
+- [Переменные окружения](#переменные-окружения)
+- [Пароль приложения для Gmail](#пароль-приложения-для-gmail)
+- [Запуск без Docker](#запуск-без-docker)
+- [Схема базы данных](#схема-базы-данных)
+- [Структура проекта](#структура-проекта)
+- [Архитектурные решения](#архитектурные-решения)
+- [Лицензии и атрибуция](#лицензии-и-атрибуция)
+
+## Возможности
+
+### Ссылки
+
+| Функция | Описание |
+|---|---|
+| Сокращение ссылок | Отдельные пулы для анонимных и авторизованных пользователей |
+| Кастомные ссылки | Пользователь задаёт собственное имя короткой ссылки |
+| QR-коды | Генерация QR-кода для любой сокращённой ссылки |
+| Статистика | Счётчик просмотров по каждой ссылке |
+| Теги | Присвоение и редактирование тега у ссылки |
+| Поиск и фильтры | Поиск по тегу, сортировка по дате, просмотрам и алфавиту, фильтрация по периоду и числу просмотров |
+| Удаление | Удаление отдельных ссылок и каскадное удаление всех ссылок при удалении аккаунта |
+
+### Аккаунты
+
+| Функция | Описание |
+|---|---|
+| Регистрация | Валидация полей, подтверждение почты по ссылке из письма |
+| Вход | Авторизация по username или email |
+| Повторная отправка письма | С ограничением по времени между запросами |
+| Автоочистка | Неподтверждённые аккаунты удаляются через 3 дня, с уведомлением на почту |
+| Выход | Завершение сессии |
+
+### Сброс пароля
+
+| Функция | Описание |
+|---|---|
+| Код на почту | Шестизначный код, действителен 15 минут |
+| Ограничение попыток | Ограниченное число попыток ввода кода |
+| Защита от подмены | Email при смене пароля берётся из подписанного токена, а не из тела запроса |
+| UX | Автовставка кода из поля ввода, отправка по Enter, анимации между шагами |
+
+### Интерфейс
+
+| Функция | Описание |
+|---|---|
+| Тёмная тема | Полная поддержка тёмной темы интерфейса |
+| Уведомления | Системные уведомления в виде тостов для успешных операций и ошибок |
+| Состояния загрузки | Отображение загрузки при выполнении запросов к серверу |
+| Обработка ошибок | Отдельные страницы для ошибок: ссылка не найдена, ошибка сервера, страница не найдена |
+| Анимации | Плавные переходы элементов интерфейса и анимации состояний |
+| Сброс пароля | Автовставка шестизначного кода, отправка формы по Enter, анимации между этапами и конфетти на финальном шаге |
+
+## Стек технологий
+
+| Слой | Технологии |
+|---|---|
+| Backend | Go 1.26, Gin, PostgreSQL 18, pgx / pgxpool, JWT (golang-jwt), bcrypt, gomail, godotenv |
+| Frontend | React 19, TypeScript 6, Vite, Tailwind CSS 4, React Router 7, Sonner, canvas-confetti |
+| Инфраструктура | Docker, Docker Compose |
+
+## Быстрый старт через Docker
+
+Понадобится установленный [Docker Desktop](https://www.docker.com/products/docker-desktop/), он включает в себя Docker и Docker Compose
+
+**1. Клонирование репозитория**
+
+```bash
+git clone https://github.com/westside-jpg/LinkShorter.git
+cd LinkShorter
+```
+
+**2. Настройка переменных окружения**
+
+```bash
+cp .env.example .env
+```
+
+Значения переменных описаны в разделе [Переменные окружения](#переменные-окружения) ниже
+
+**3. Запуск backend и базы данных**
+
+```bash
+docker compose up --build
+```
+
+При первом запуске сервер автоматически создаст нужные таблицы в базе. API станет доступен на `http://localhost:8080`
+
+**4. Запуск frontend**
+
+Frontend не включён в Docker Compose намеренно, подробнее об этом решении в разделе [Архитектурные решения](#архитектурные-решения)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Приложение будет доступно на `http://localhost:5173`
+
+**Остановка**
+
+```bash
+docker compose down        # остановить контейнеры
+docker compose down -v     # остановить и удалить данные базы
+```
+
+**Последующий запуск, если файлы не менялись**
+
+```bash
+docker compose up
+```
+
+## Просмотр базы данных
+
+После запуска Docker PostgreSQL доступен на localhost:5432
+
+Подключение через psql:
+
+```bash
+docker compose exec postgres psql -U <POSTGRES_USER> -d <POSTGRES_DB>
+```
+
+Где:  
+`<POSTGRES_USER>` - значение POSTGRES_USER из .env  
+`<POSTGRES_DB>` - значение POSTGRES_DB из .env
+
+## Переменные окружения
+
+Все настройки хранятся в одном файле `.env` в корне проекта. Он используется и докером, и сервером при запуске без докера
+
+```bash
+cp .env.example .env
+```
+
+| Переменная | Назначение |
+|---|---|
+| `DATABASE_URL` | Строка подключения к своему локальному PostgreSQL, нужна только для запуска без докера, подробнее в разделе [Запуск без Docker](#запуск-без-docker) |
+| `POSTGRES_USER` | Имя пользователя для базы данных внутри Docker |
+| `POSTGRES_PASSWORD` | Пароль пользователя для базы данных внутри Docker |
+| `POSTGRES_DB` | Имя базы данных внутри Docker |
+| `SMTP_HOST` | Адрес SMTP-сервера, для Gmail это `smtp.gmail.com` |
+| `SMTP_PORT` | Порт SMTP-сервера, обычно `587` |
+| `SMTP_USER` | Почта, с которой отправляются письма |
+| `SMTP_PASSWORD` | Пароль приложения, инструкция ниже |
+| `JWT_SECRET` | Секрет для подписи JWT-токенов, любая длинная случайная строка |
+
+При запуске через Docker используются только `POSTGRES_*`, из них `docker-compose.yml` сам собирает правильный `DATABASE_URL` для контейнера с backend. При запуске без Docker используется только `DATABASE_URL`, указывающий на твой локальный PostgreSQL. Оба варианта живут в одном файле одновременно и не мешают друг другу
+
+## Пароль приложения для Gmail
+
+Письма верификации и сброса пароля отправляются через Gmail. Обычный пароль от аккаунта для SMTP не подходит, нужен отдельный пароль приложения
+
+> ⚠️ При запуске проекта рекомендуется отключить VPN. Google может блокировать SMTP-подключения с некоторых VPN-адресов из-за подозрительной активности, из-за чего письма верификации и сброса пароля могут не отправляться
+
+1. Открыть [Google Account → Security](https://myaccount.google.com/security)
+2. Убедиться, что включена двухфакторная аутентификация
+3. Перейти на страницу [App Passwords](https://myaccount.google.com/apppasswords)
+4. Указать любое название, например `LinkShorter`, и создать пароль
+5. Скопировать выданный 16-значный код без пробелов
+6. Вставить его в `SMTP_PASSWORD` в файле `.env` в корне проекта
+
+## Запуск без Docker
+
+**Требования:** Go, Node.js, локально установленный PostgreSQL
+
+В `.env` в этом случае вместо трёх `POSTGRES_*` переменных нужно указать `DATABASE_URL` целиком, с хостом `localhost`, например
+
+```env
+DATABASE_URL=postgres://postgres:your-password@localhost:5432/linkshorter
+```
+
+Запускать backend нужно из корня репозитория, а не из папки `backend`, чтобы сервер нашёл файл `.env` рядом с собой
+
+```bash
+go run ./backend
+```
+
+Frontend запускается как обычно
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Схема базы данных
+
+```sql
+CREATE TABLE links (
+    id SERIAL PRIMARY KEY,
+    original_url TEXT NOT NULL,
+    short_url VARCHAR(50) UNIQUE NOT NULL,
+    user_id INTEGER DEFAULT 0,
+    views INTEGER DEFAULT 0,
+    tag TEXT DEFAULT '',
+    is_custom BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code TEXT NOT NULL DEFAULT '',
+    reset_password_code TEXT NOT NULL DEFAULT '',
+    last_send TIMESTAMPTZ,
+    reset_password_attempts INT DEFAULT 5,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+## Структура проекта
+
+```
+LinkShorter/
+├── docker-compose.yml          # Оркестрация контейнеров (backend + postgres)
+├── .env.example                # Пример переменных окружения
+├── .gitignore                  # Исключаемые из репозитория файлы
+├── README.md                   # Документация проекта
+├── docs/                       # Скриншоты для README
+│   ├── logo.svg
+│   ├── main-light.png
+│   ├── main-dark.png
+│   └── ...
+│
+├── backend/
+│   ├── Dockerfile              # Сборка Go-приложения в контейнер
+│   ├── main.go                 # Точка входа (инициализация, запуск сервера)
+│   ├── go.mod                  # Go-модуль и зависимости
+│   ├── go.sum                  # Контрольные суммы зависимостей
+│   ├── config/
+│   │   └── config.go           # Загрузка конфигурации из .env
+│   ├── database/
+│   │   └── database.go         # Подключение к PostgreSQL, создание таблиц
+│   ├── jwt/
+│   │   └── jwt_service.go      # Генерация JWT-токенов
+│   ├── models/
+│   │   └── models.go           # Структуры данных
+│   ├── routers/
+│   │   ├── setup.go            # Настройка роутов
+│   │   ├── auth.go             # Роуты авторизации и аутентификации
+│   │   ├── links.go            # Роуты для работы с ссылками
+│   │   ├── reset_password.go   # Роуты для сброса пароля
+│   │   └── types.go            # Структуры для биндинга JSON
+│   └── services/               # Бизнес-логика
+│       ├── auth.go             # Логика работы с пользователями
+│       ├── links.go            # Логика для работы с ссылками
+│       ├── emails.go           # Отправка писем
+│       ├── reset_password.go   # Логика сброса пароля
+│       ├── permissions.go      # Проверка доступа к ресурсам
+│       ├── scheduler.go        # Периодическая очистка неподтверждённых аккаунтов
+│       ├── user.go             # Получение данных о пользователе для React
+│       ├── utils.go            # Вспомогательные функции
+│       └── validation.go       # Валидация входных данных
+│
+└── frontend/
+    ├── package.json            # Зависимости и скрипты Node.js
+    ├── package-lock.json       # Точные версии зависимостей
+    ├── tsconfig.json           # Общая конфигурация TypeScript
+    ├── tsconfig.app.json       # Конфигурация для приложения
+    ├── tsconfig.node.json      # Конфигурация для Node.js (Vite)
+    ├── vite.config.ts          # Настройка Vite
+    ├── eslint.config.js        # Настройки ESLint
+    ├── index.html              # HTML-шаблон приложения
+    ├── public/                 # Статические файлы
+    │   ├── logo.svg
+    │   ├── apply.svg           
+    │   ├── arrow.svg           
+    │   ├── avatar.svg          
+    │   └── ...
+    └── src/
+        ├── main.tsx            # Точка входа React
+        ├── App.tsx             # Корневой компонент, маршрутизация
+        ├── index.css           # Глобальные стили
+        ├── context/
+        │   └── AuthContext.tsx # Контекст для информации про юзера
+        ├── components/
+        │   ├── Sidebar.tsx     # Боковое меню навигации
+        │   └── LinkCard.tsx    # Карточка ссылки в списке
+        └── pages/
+            ├── Home.tsx              # Главная страница
+            ├── LinksList.tsx         # Список ссылок с фильтрацией и сортировкой
+            ├── ResetPassword.tsx     # Сброс пароля
+            ├── LinkNotFound.tsx      # Страница ссылка не найдена
+            ├── ServerError.tsx       # Страница ошибки сервера
+            └── NotFound.tsx          # Страница 404
+```
+
+## Архитектурные решения
+
+**Почему frontend не в Docker**  
+Vite использует Hot Module Replacement, механизм, который обновляет в браузере только изменившийся кусок кода без перезагрузки всей страницы и без потери состояния приложения. Для этого Vite напрямую следит за файлами через файловую систему ОС. Внутри контейнера такое отслеживание работает менее стабильно, поэтому для разработки frontend запускается напрямую через Node, а Docker используется там, где даёт реальное преимущество, то есть для backend и базы данных
+
+**Разделение анонимных и пользовательских ссылок**  
+Сервис хранит ссылки анонимных и авторизованных пользователей по разным правилам. Анонимные ссылки могут повторяться между разными посетителями и не привязаны к аккаунту. Для авторизованных пользователей каждая ссылка принадлежит конкретному владельцу, повторное сокращение уже существующего URL возвращает ранее созданную ссылку этого пользователя вместо создания новой (кроме кастомных ссылок). Это избавляет базу данных от дубликатов внутри одного аккаунта и позволяет хранить персональную историю ссылок
+
+**Изоляция JWT**  
+Токен авторизации хранит минимальный набор данных, а именно идентификатор пользователя и срок действия. Остальная информация о пользователе всегда запрашивается из базы данных, что позволяет иметь всегда актуальные данные
+
+**HttpOnly Cookie вместо LocalStorage**  
+JWT хранится в HttpOnly Cookie, поэтому JavaScript не имеет к нему доступа. Это уменьшает риск компрометации токена при XSS-атаках
+
+**Защита при сбросе пароля**  
+Почта, для которой меняется пароль, определяется на сервере из содержимого подписанного токена, а не из тела запроса от клиента. Это исключает возможность подмены получателя в процессе сброса
+
+**Валидация на backend**  
+Frontend валидирует ввод только для удобства пользователя. Все проверки безопасности, корректности данных, уникальности пользователей и ссылок повторяются и обеспечиваются на стороне сервера
+
+**Разделение бизнес-логики и HTTP-слоя**  
+HTTP-обработчики отвечают только за получение запроса и формирование ответа. Основная логика приложения вынесена в сервисы, что упрощает сопровождение проекта, тестирование и повторное использование кода
+
+**Автоматическая инициализация базы данных**  
+При запуске backend самостоятельно создаёт отсутствующие таблицы, если база данных пустая. Благодаря этому проект можно запустить без ручного выполнения SQL-скриптов
+
+**Единая конфигурация для двух способов запуска**  
+Один файл `.env` используется как при локальном запуске, так и при запуске через Docker. В Docker Compose строка подключения к базе данных собирается автоматически из переменных `POSTGRES_*`, а при запуске без Docker используется готовый `DATABASE_URL`
+
+**Автоматическая очистка неподтверждённых аккаунтов**  
+Аккаунты, не подтвердившие адрес электронной почты в течение трёх дней, автоматически удаляются. После удаления пользователю отправляется письмо с уведомлением о том, что аккаунт был удалён. Такой механизм предотвращает накопление неиспользуемых учётных записей в базе данных
+
+**Каскадное удаление пользовательских данных**  
+При удалении аккаунта автоматически удаляются все принадлежащие ему сокращённые ссылки. Это предотвращает хранение мусорных записей в базе данных и сохраняет её целостность
+
+## Лицензии и атрибуция
+
+* **Шрифт**: Для оформления интерфейса используется шрифт **Compliance Sans**. Он распространяется по лицензии **SIL Open Font License, Version 1.1**
+* **Автор**: Copyright (c) 2022-2026, “GoggleFonts”
+
+С полным текстом лицензии можно ознакомиться по адресу: [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL)

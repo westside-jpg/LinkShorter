@@ -1,0 +1,41 @@
+# Переменные окружения
+.env
+
+# IDE
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.iml
+
+# macOS
+.DS_Store
+
+# Windows / Visual Studio
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Go
+backend/linkshorter
+backend/*.exe
+backend/*.test
+
+# Node / Vite
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+frontend/.vite
+frontend/.vite-temp
+
+# AI-ассистенты
+.junie
+
+# Логи и тестовые файлы
+*.log
+backend/test.http
+
+# Vite кэш
+*.tsbuildinfo

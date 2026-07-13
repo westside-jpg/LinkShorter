@@ -53,7 +53,7 @@ func CreateTables(db *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS links (
 			id SERIAL PRIMARY KEY,
 			original_url TEXT NOT NULL,
-			short_url VARCHAR(30) UNIQUE NOT NULL,
+			short_url VARCHAR(50) UNIQUE NOT NULL,
 			user_id INTEGER DEFAULT 0,
 			views INTEGER DEFAULT 0,
 			tag TEXT DEFAULT '',
