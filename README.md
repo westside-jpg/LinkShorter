@@ -22,8 +22,8 @@
 
 <div align="center">
 
-<img src="docs/main-light.png" width="45%">
-<img src="docs/main-dark.png" width="45%">
+<img src="docs/main-light.png" width="90%">
+<img src="docs/main-dark.png" width="90%">
 
 </div>
 
@@ -33,8 +33,8 @@
 
 <div align="center">
 
-<img src="docs/my-links-light.png" width="45%">
-<img src="docs/my-links-dark.png" width="45%">
+<img src="docs/my-links-light.png" width="90%">
+<img src="docs/my-links-dark.png" width="90%">
 
 </div>
 
@@ -44,8 +44,8 @@
 
 <div align="center">
 
-<img src="docs/qr-light.png" width="45%">
-<img src="docs/qr-dark.png" width="45%">
+<img src="docs/qr-light.png" width="90%">
+<img src="docs/qr-dark.png" width="90%">
 
 </div>
 
@@ -55,8 +55,8 @@
 
 <div align="center">
 
-<img src="docs/reset-password-light.png" width="45%">
-<img src="docs/reset-password-dark.png" width="45%">
+<img src="docs/reset-password-light.png" width="90%">
+<img src="docs/reset-password-dark.png" width="90%">
 
 </div>
 
@@ -66,8 +66,8 @@
 
 <div align="center">
 
-<img src="docs/sidebar-light.png" width="45%">
-<img src="docs/sidebar-dark.png" width="45%">
+<img src="docs/sidebar-light.png" width="90%">
+<img src="docs/sidebar-dark.png" width="90%">
 
 </div>
 
@@ -77,8 +77,8 @@
 
 <div align="center">
 
-<img src="docs/sorting-and-filtering-light.png" width="45%">
-<img src="docs/sorting-and-filtering-dark.png" width="45%">
+<img src="docs/sorting-and-filtering-light.png" width="90%">
+<img src="docs/sorting-and-filtering-dark.png" width="90%">
 
 </div>
 
@@ -438,7 +438,10 @@ HTTP-обработчики отвечают только за получени�
 
 ## Лицензии и атрибуция
 
-* **Шрифт**: Для оформления интерфейса используется шрифт **Compliance Sans**. Он распространяется по лицензии **SIL Open Font License, Version 1.1**
-* **Автор**: Copyright (c) 2022-2026, “GoggleFonts”
+### Код проекта
+Проект распространяется под лицензией MIT. Подробнее в файле [LICENSE](LICENSE)
 
+### Шрифт
+Для оформления интерфейса используется шрифт **Compliance Sans**, распространяемый по лицензии **SIL Open Font License, Version 1.1**  
+Автор: Copyright (c) 2022-2026, "GoggleFonts"  
 С полным текстом лицензии можно ознакомиться по адресу: [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL)
